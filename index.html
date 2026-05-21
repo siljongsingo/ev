@@ -10,17 +10,12 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 :root {
   --font: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',Arial,sans-serif;
-  --bg: #F5F4EF;
-  --card: #FFFFFF;
-  --border: #E8E6DF;
-  --text: #1A1A18;
-  --muted: #73726C;
-  --hint: #A3A29C;
-  --blue: #185FA5;   --blue-bg: #E6F1FB;
-  --red: #A32D2D;    --red-bg: #FCEBEB;
-  --green: #3B6D11;  --green-bg: #EAF3DE;
-  --amber: #854F0B;  --amber-bg: #FAEEDA;
-  --purple: #534AB7; --purple-bg: #EEEDFE;
+  --bg: #F5F4EF; --card: #FFFFFF; --border: #E8E6DF;
+  --text: #1A1A18; --muted: #73726C; --hint: #A3A29C;
+  --blue: #185FA5; --blue-bg: #E6F1FB;
+  --red: #A32D2D;  --red-bg: #FCEBEB;
+  --green: #3B6D11; --green-bg: #EAF3DE;
+  --amber: #854F0B; --amber-bg: #FAEEDA;
   --radius: 10px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -47,20 +42,15 @@ button{font-family:var(--font)}
 </head>
 <body>
 <div id="root"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.4/babel.min.js"></script>
-
-<script type="text/babel" data-presets="react">
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.js"></script>
+<script>
+const html = htm.bind((type, ...args) => React.createElement(type || React.Fragment, ...args));
 const { useState, useEffect, useCallback, useRef } = React;
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ★  API 키 설정  —  아래 빈 문자열 안에 발급받은 Anthropic API 키를 입력하세요
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   예시) const DEFAULT_API_KEY = "sk-ant-api03-XXXXXXXXXXXXXXXX";
-   · 키가 여기에 설정되면 최초 실행 시 입력 모달이 나타나지 않습니다.
-   · 설정 패널(우측 상단 ⚙)에서 언제든 변경 가능합니다.
+   ★  API 키 설정  —  아래에 발급받은 Anthropic API 키를 입력하세요
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const DEFAULT_API_KEY = "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";
 
@@ -89,14 +79,13 @@ const shortSido = s => s
   .replace("특별자치시","").replace("특별자치도","")
   .replace("특별시","").replace("광역시","").replace(/도$/,"").trim();
 
-/* ─── Anthropic API 호출 ───────────────────────────────────────────────────── */
+/* ─── API 호출 ─────────────────────────────────────────────────────────────── */
 async function fetchSubsidy(region, apiKey) {
   const yr = new Date().getFullYear();
   const prompt = `웹 검색으로 "${region}" ${yr}년 전기차 보조금 현황을 조회하세요.
 ev.or.kr(무공해차 통합누리집)과 해당 지자체 공식 홈페이지를 참고해주세요.
 순수 JSON만 반환 (마크다운 코드블록 없이):
 {"region":"${region}","year":${yr},"passenger":{"national":국비만원또는null,"city":시도비만원또는null,"district":시군구비만원또는null,"corp":공단지원만원또는null,"total":합계만원또는null,"quota":총지원대수또는null,"remaining":잔여대수또는null,"status":"접수중|마감|대기|미정","queue":대기번호또는0,"period":"신청기간(예:03.01~12.31)또는null","note":"특이사항또는null"},"truck":{"national":null,"city":null,"district":null,"corp":null,"total":null,"quota":null,"remaining":null,"status":"미정","queue":0,"period":null,"note":null},"contacts":[{"dept":"담당부서명","phone":"전화번호","email":null}],"official_url":"공식페이지URL또는null","sources":["URL1","URL2"],"notice":null}`;
-
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -112,20 +101,15 @@ ev.or.kr(무공해차 통합누리집)과 해당 지자체 공식 홈페이지�
       messages: [{ role: "user", content: prompt }],
     }),
   });
-
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
-    const msg = e?.error?.message || "";
     if (res.status === 401) throw new Error("API 키가 올바르지 않습니다. 설정에서 키를 확인해 주세요.");
-    throw new Error(msg || `API 오류 (${res.status})`);
+    throw new Error(e?.error?.message || `API 오류 (${res.status})`);
   }
-
   const d = await res.json();
   const txt = (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
   const m = txt.match(/\{[\s\S]*\}/);
-  if (m) {
-    try { return JSON.parse(m[0]); } catch (_) {}
-  }
+  if (m) { try { return JSON.parse(m[0]); } catch (_) {} }
   throw new Error("응답 파싱 실패 — 다시 시도해 주세요");
 }
 
@@ -137,627 +121,501 @@ const STATUS = {
   "미정":   { c:"#5A5A5A", bg:"#EEEEEC", dot:"#999"    },
 };
 
-/* ─── 작은 컴포넌트들 ─────────────────────────────────────────────────────── */
-
+/* ─── Pill ──────────────────────────────────────────────────────────────────── */
 function Pill({ s }) {
   const st = STATUS[s] || STATUS["미정"];
-  return (
-    <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:20,background:st.bg,color:st.c,fontSize:11,fontWeight:600}}>
-      <span style={{width:6,height:6,borderRadius:"50%",background:st.dot,animation:s==="접수중"?"blink 1.5s infinite":"none"}}/>
-      {s || "미정"}
-    </span>
-  );
+  return html`<span style=${{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:20,background:st.bg,color:st.c,fontSize:11,fontWeight:600}}>
+    <span style=${{width:6,height:6,borderRadius:"50%",background:st.dot,animation:s==="접수중"?"blink 1.5s infinite":"none"}}></span>
+    ${s || "미정"}
+  </span>`;
 }
 
+/* ─── KCard ─────────────────────────────────────────────────────────────────── */
 function KCard({ label, val, unit, sub, accent }) {
-  return (
-    <div style={{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",flex:1,minWidth:0}}>
-      <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:5}}>{label}</div>
-      <div style={{fontSize:18,fontWeight:700,color:accent||"var(--text)",letterSpacing:"-0.5px",lineHeight:1.2}}>
-        {val != null
-          ? <>{typeof val === "number" ? val.toLocaleString() : val}{unit && <span style={{fontSize:11,fontWeight:400,marginLeft:2}}>{unit}</span>}</>
-          : "—"}
-      </div>
-      {sub && <div style={{fontSize:10,color:"var(--hint)",marginTop:3}}>{sub}</div>}
+  return html`<div style=${{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",flex:1,minWidth:0}}>
+    <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:5}}>${label}</div>
+    <div style=${{fontSize:18,fontWeight:700,color:accent||"var(--text)",letterSpacing:"-0.5px",lineHeight:1.2}}>
+      ${val != null ? html`<>${typeof val === "number" ? val.toLocaleString() : val}${unit ? html`<span style=${{fontSize:11,fontWeight:400,marginLeft:2}}>${unit}</span>` : ""}</>` : "—"}
     </div>
-  );
+    ${sub ? html`<div style=${{fontSize:10,color:"var(--hint)",marginTop:3}}>${sub}</div>` : ""}
+  </div>`;
 }
 
+/* ─── ProgBar ────────────────────────────────────────────────────────────────── */
 function ProgBar({ total, rem }) {
   if (!total) return null;
   const used = total - (rem || 0);
   const pct = Math.min(100, Math.round((used / total) * 100));
   const bc = pct > 80 ? "var(--red)" : pct > 60 ? "var(--amber)" : "var(--blue)";
-  return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginBottom:4}}>
-        <span>예산 소진율</span>
-        <span style={{fontWeight:600}}>{pct}% · 잔여 {(rem||0).toLocaleString()}대</span>
-      </div>
-      <div style={{height:5,borderRadius:3,background:"var(--border)",overflow:"hidden"}}>
-        <div style={{height:"100%",borderRadius:3,background:bc,width:`${pct}%`,transition:"width .6s ease"}}/>
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--hint)",marginTop:3}}>
-        <span>0</span><span>{total.toLocaleString()}대</span>
-      </div>
+  return html`<div>
+    <div style=${{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginBottom:4}}>
+      <span>예산 소진율</span>
+      <span style=${{fontWeight:600}}>${pct}% · 잔여 ${(rem||0).toLocaleString()}대</span>
     </div>
-  );
+    <div style=${{height:5,borderRadius:3,background:"var(--border)",overflow:"hidden"}}>
+      <div style=${{height:"100%",borderRadius:3,background:bc,width:pct+"%",transition:"width .6s ease"}}></div>
+    </div>
+    <div style=${{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--hint)",marginTop:3}}>
+      <span>0</span><span>${total.toLocaleString()}대</span>
+    </div>
+  </div>`;
 }
 
+/* ─── Skel ───────────────────────────────────────────────────────────────────── */
 function Skel() {
-  return (
-    <div>
-      {[70,36,36,36,50].map((h,i) => (
-        <div key={i} style={{height:h,borderRadius:8,marginBottom:10,
-          background:"linear-gradient(90deg,#F0EFEA 25%,#E4E2DA 50%,#F0EFEA 75%)",
-          backgroundSize:"200% 100%",animation:"shimmer 1.4s infinite"}}/>
-      ))}
-    </div>
-  );
+  return html`<div>
+    ${[70,36,36,36,50].map((h,i) => html`<div key=${i} style=${{height:h,borderRadius:8,marginBottom:10,
+      background:"linear-gradient(90deg,#F0EFEA 25%,#E4E2DA 50%,#F0EFEA 75%)",
+      backgroundSize:"200% 100%",animation:"shimmer 1.4s infinite"}}></div>`)}
+  </div>`;
 }
 
-/* ─── API 키 입력 모달 ─────────────────────────────────────────────────────── */
+/* ─── ApiKeyModal ────────────────────────────────────────────────────────────── */
 function ApiKeyModal({ onSave }) {
   const [key, setKey] = useState("");
   const inputRef = useRef();
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 100); }, []);
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(2px)"}}>
-      <div style={{background:"var(--card)",borderRadius:16,padding:28,width:440,boxShadow:"0 24px 64px rgba(0,0,0,0.3)",animation:"fadeIn .2s ease"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-          <i className="ti ti-key" style={{fontSize:22,color:"#FBBF24"}}/>
-          <h2 style={{fontSize:16,fontWeight:700}}>Anthropic API 키 설정</h2>
-        </div>
-        <p style={{fontSize:12,color:"var(--muted)",marginBottom:16,lineHeight:1.7}}>
-          이 도구는 Claude AI로 실시간 보조금 데이터를 웹에서 검색합니다.<br/>
-          <a href="https://console.anthropic.com/keys" target="_blank" rel="noopener noreferrer">
-            console.anthropic.com <i className="ti ti-external-link" style={{fontSize:10}}/>
-          </a>에서 API 키를 발급받으세요.
-        </p>
-        <input ref={inputRef}
-          value={key} onChange={e => setKey(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && key.trim() && onSave(key.trim())}
-          placeholder="sk-ant-api03-..."
-          type="password"
-          style={{width:"100%",padding:"10px 12px",border:"1px solid var(--border)",borderRadius:8,fontSize:13,outline:"none",marginBottom:10,fontFamily:"'Courier New',monospace",letterSpacing:"0.5px"}}
-        />
-        <p style={{fontSize:11,color:"var(--hint)",marginBottom:18,display:"flex",alignItems:"flex-start",gap:5}}>
-          <i className="ti ti-lock" style={{fontSize:12,marginTop:1,flexShrink:0}}/>
-          API 키는 이 브라우저의 로컬 스토리지에만 저장되며 외부 서버로 전송되지 않습니다.
-        </p>
-        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-          <button onClick={() => onSave(key.trim())} disabled={!key.trim()}
-            style={{padding:"9px 22px",borderRadius:8,border:"none",background:key.trim()?"#0D0C0A":"#ccc",color:"#fff",fontSize:13,fontWeight:600,cursor:key.trim()?"pointer":"not-allowed",transition:"background .15s"}}>
-            저장하기
-          </button>
-        </div>
+  useEffect(() => { setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 100); }, []);
+  return html`<div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(2px)"}}>
+    <div style=${{background:"var(--card)",borderRadius:16,padding:28,width:440,boxShadow:"0 24px 64px rgba(0,0,0,0.3)",animation:"fadeIn .2s ease"}}>
+      <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+        <i className="ti ti-key" style=${{fontSize:22,color:"#FBBF24"}}></i>
+        <h2 style=${{fontSize:16,fontWeight:700}}>Anthropic API 키 설정</h2>
+      </div>
+      <p style=${{fontSize:12,color:"var(--muted)",marginBottom:16,lineHeight:1.7}}>
+        이 도구는 Claude AI로 실시간 보조금 데이터를 웹에서 검색합니다.<br/>
+        <a href="https://console.anthropic.com/keys" target="_blank" rel="noopener noreferrer">
+          console.anthropic.com <i className="ti ti-external-link" style=${{fontSize:10}}></i>
+        </a>에서 API 키를 발급받으세요.
+      </p>
+      <input ref=${inputRef}
+        value=${key}
+        onChange=${e => setKey(e.target.value)}
+        onKeyDown=${e => e.key === "Enter" && key.trim() && onSave(key.trim())}
+        placeholder="sk-ant-api03-..."
+        type="password"
+        style=${{width:"100%",padding:"10px 12px",border:"1px solid var(--border)",borderRadius:8,fontSize:13,outline:"none",marginBottom:10,fontFamily:"'Courier New',monospace",letterSpacing:"0.5px"}}
+      />
+      <p style=${{fontSize:11,color:"var(--hint)",marginBottom:18,display:"flex",alignItems:"flex-start",gap:5}}>
+        <i className="ti ti-lock" style=${{fontSize:12,marginTop:1,flexShrink:0}}></i>
+        API 키는 이 브라우저의 로컬 스토리지에만 저장되며 외부 서버로 전송되지 않습니다.
+      </p>
+      <div style=${{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick=${() => onSave(key.trim())} disabled=${!key.trim()}
+          style=${{padding:"9px 22px",borderRadius:8,border:"none",background:key.trim()?"#0D0C0A":"#ccc",color:"#fff",fontSize:13,fontWeight:600,cursor:key.trim()?"pointer":"not-allowed",transition:"background .15s"}}>
+          저장하기
+        </button>
       </div>
     </div>
-  );
+  </div>`;
 }
 
-/* ─── 설정 패널 ─────────────────────────────────────────────────────────────── */
+/* ─── SettingsPanel ──────────────────────────────────────────────────────────── */
 function SettingsPanel({ onClose, onChangeKey, onResetKey, onClearFavs, apiKeyMasked, isDefaultKey }) {
-  return (
-    <>
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:500}} onClick={onClose}/>
-      <div style={{position:"fixed",top:0,right:0,bottom:0,width:280,background:"var(--card)",boxShadow:"-8px 0 32px rgba(0,0,0,0.15)",zIndex:600,display:"flex",flexDirection:"column",animation:"slideIn .2s ease"}}>
-        <div style={{padding:"14px 16px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0D0C0A"}}>
-          <span style={{fontSize:13,fontWeight:600,color:"#fff"}}>
-            <i className="ti ti-settings" style={{marginRight:7}}/>설정
-          </span>
-          <button onClick={onClose} style={{border:"none",background:"none",cursor:"pointer",color:"#888",fontSize:16}}>
-            <i className="ti ti-x"/>
+  const officialSites = [
+    {label:"무공해차 통합누리집", url:"https://www.ev.or.kr",                                    desc:"전기차 보조금 통합 조회"},
+    {label:"환경부",               url:"https://www.me.go.kr",                                    desc:"보조금 정책 공식 발표"},
+    {label:"한국환경공단",          url:"https://www.keco.or.kr",                                  desc:"공단 보조금 지원 안내"},
+    {label:"보조금 상세 조회",      url:"https://www.ev.or.kr/portal/buyersGuide/subsidyInfo",     desc:"지역별 보조금 상세 조회"},
+  ];
+  const sidoSites = [
+    {label:"서울시",  url:"https://news.seoul.go.kr"},
+    {label:"경기도",  url:"https://www.gg.go.kr"},
+    {label:"부산시",  url:"https://www.busan.go.kr"},
+    {label:"인천시",  url:"https://www.incheon.go.kr"},
+    {label:"대구시",  url:"https://www.daegu.go.kr"},
+    {label:"대전시",  url:"https://www.daejeon.go.kr"},
+    {label:"광주시",  url:"https://www.gwangju.go.kr"},
+    {label:"울산시",  url:"https://www.ulsan.go.kr"},
+  ];
+  return html`<>
+    <div style=${{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:500}} onClick=${onClose}></div>
+    <div style=${{position:"fixed",top:0,right:0,bottom:0,width:300,background:"var(--card)",boxShadow:"-8px 0 32px rgba(0,0,0,0.15)",zIndex:600,display:"flex",flexDirection:"column",animation:"slideIn .2s ease"}}>
+      <div style=${{padding:"14px 16px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0D0C0A"}}>
+        <span style=${{fontSize:13,fontWeight:600,color:"#fff"}}>
+          <i className="ti ti-settings" style=${{marginRight:7}}></i>설정
+        </span>
+        <button onClick=${onClose} style=${{border:"none",background:"none",cursor:"pointer",color:"#888",fontSize:18,lineHeight:1}}>
+          <i className="ti ti-x"></i>
+        </button>
+      </div>
+      <div style=${{padding:16,flex:1,overflowY:"auto"}}>
+
+        <div style=${{marginBottom:20}}>
+          <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>API 키</div>
+          <div style=${{padding:"9px 12px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--border)",marginBottom:8,fontSize:11}}>
+            <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
+              <span style=${{fontWeight:600,color:"var(--text)"}}>현재 사용 중인 키</span>
+              ${isDefaultKey
+                ? html`<span style=${{fontSize:10,padding:"1px 7px",borderRadius:10,background:"var(--green-bg)",color:"var(--green)",fontWeight:600}}>기본값</span>`
+                : html`<span style=${{fontSize:10,padding:"1px 7px",borderRadius:10,background:"var(--blue-bg)",color:"var(--blue)",fontWeight:600}}>수동 입력</span>`}
+            </div>
+            <code style=${{fontSize:10,color:"var(--muted)",letterSpacing:"0.5px",wordBreak:"break-all"}}>${apiKeyMasked}</code>
+          </div>
+          <button onClick=${onChangeKey}
+            style=${{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--text)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <i className="ti ti-pencil" style=${{fontSize:13,color:"var(--muted)"}}></i>다른 API 키로 변경
+          </button>
+          ${!isDefaultKey ? html`<button onClick=${onResetKey}
+            style=${{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--amber)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+            <i className="ti ti-refresh" style=${{fontSize:13}}></i>기본 키로 초기화
+          </button>` : ""}
+        </div>
+
+        <div style=${{marginBottom:20}}>
+          <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>즐겨찾기</div>
+          <button onClick=${onClearFavs}
+            style=${{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--red)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+            <i className="ti ti-trash" style=${{fontSize:13}}></i>즐겨찾기 전체 삭제
           </button>
         </div>
-        <div style={{padding:16,flex:1,overflowY:"auto"}}>
 
-          {/* API 키 */}
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>API 키</div>
-            {/* 현재 키 상태 표시 */}
-            <div style={{padding:"9px 12px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--border)",marginBottom:8,fontSize:11}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
-                <span style={{fontWeight:600,color:"var(--text)"}}>현재 사용 중인 키</span>
-                {isDefaultKey
-                  ? <span style={{fontSize:10,padding:"1px 7px",borderRadius:10,background:"var(--green-bg)",color:"var(--green)",fontWeight:600}}>기본값</span>
-                  : <span style={{fontSize:10,padding:"1px 7px",borderRadius:10,background:"var(--blue-bg)",color:"var(--blue)",fontWeight:600}}>수동 입력</span>
-                }
-              </div>
-              <code style={{fontSize:10,color:"var(--muted)",letterSpacing:"0.5px",wordBreak:"break-all"}}>{apiKeyMasked}</code>
+        <div style=${{marginBottom:20}}>
+          <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>공식 참고 사이트</div>
+          ${officialSites.map((s,i) => html`<a key=${i} href=${s.url} target="_blank" rel="noopener noreferrer"
+            style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:6,border:"1px solid var(--border)",marginBottom:6,background:"var(--bg)",textDecoration:"none",color:"var(--text)"}}>
+            <div>
+              <div style=${{fontSize:11,fontWeight:500}}>${s.label}</div>
+              <div style=${{fontSize:10,color:"var(--muted)"}}>${s.desc}</div>
             </div>
-            <button onClick={onChangeKey}
-              style={{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--text)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-              <i className="ti ti-pencil" style={{fontSize:13,color:"var(--muted)"}}/>다른 API 키로 변경
-            </button>
-            {!isDefaultKey && (
-              <button onClick={onResetKey}
-                style={{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--amber)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                <i className="ti ti-refresh" style={{fontSize:13}}/>기본 키로 초기화
-              </button>
-            )}
-          </div>
-
-          {/* 즐겨찾기 관리 */}
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>즐겨찾기</div>
-            <button onClick={onClearFavs}
-              style={{width:"100%",padding:"9px 12px",border:"1px solid var(--border)",borderRadius:8,background:"var(--bg)",color:"var(--red)",fontSize:12,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-              <i className="ti ti-trash" style={{fontSize:13}}/>즐겨찾기 전체 삭제
-            </button>
-          </div>
-
-          {/* 공식 사이트 링크 */}
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>공식 참고 사이트</div>
-            {[
-              {label:"무공해차 통합누리집", url:"https://www.ev.or.kr", desc:"전기차 보조금 통합 조회"},
-              {label:"환경부", url:"https://www.me.go.kr", desc:"보조금 정책 공식 발표"},
-              {label:"한국환경공단", url:"https://www.keco.or.kr", desc:"공단 보조금 지원 안내"},
-              {label:"무공해차 전환 보조금", url:"https://www.ev.or.kr/portal/buyersGuide/subsidyInfo", desc:"지역별 보조금 상세 조회"},
-            ].map((s,i) => (
-              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:6,border:"1px solid var(--border)",marginBottom:6,background:"var(--bg)",textDecoration:"none",color:"var(--text)"}}>
-                <div>
-                  <div style={{fontSize:11,fontWeight:500}}>{s.label}</div>
-                  <div style={{fontSize:10,color:"var(--muted)"}}>{s.desc}</div>
-                </div>
-                <i className="ti ti-external-link" style={{fontSize:12,color:"var(--hint)"}}/>
-              </a>
-            ))}
-          </div>
-
-          {/* 지자체 보조금 공지 */}
-          <div>
-            <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>광역시·도 전기차 정책</div>
-            {[
-              {label:"서울시", url:"https://news.seoul.go.kr"},
-              {label:"경기도", url:"https://www.gg.go.kr"},
-              {label:"부산시", url:"https://www.busan.go.kr"},
-              {label:"인천시", url:"https://www.incheon.go.kr"},
-            ].map((s,i) => (
-              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:5,border:"1px solid var(--border)",marginRight:6,marginBottom:6,fontSize:11,background:"var(--bg)",color:"var(--text)",textDecoration:"none"}}>
-                {s.label}<i className="ti ti-external-link" style={{fontSize:9,color:"var(--hint)"}}/>
-              </a>
-            ))}
-          </div>
+            <i className="ti ti-external-link" style=${{fontSize:12,color:"var(--hint)"}}></i>
+          </a>`)}
         </div>
-        <div style={{padding:"12px 16px",borderTop:"1px solid var(--border)",fontSize:10,color:"var(--hint)"}}>
-          ⚡ 전기차 보조금 모니터 v1.0 · Powered by Claude AI
+
+        <div>
+          <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:8}}>광역시·도 전기차 정책</div>
+          <div style=${{display:"flex",flexWrap:"wrap",gap:6}}>
+            ${sidoSites.map((s,i) => html`<a key=${i} href=${s.url} target="_blank" rel="noopener noreferrer"
+              style=${{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:5,border:"1px solid var(--border)",fontSize:11,background:"var(--bg)",color:"var(--text)",textDecoration:"none"}}>
+              ${s.label}<i className="ti ti-external-link" style=${{fontSize:9,color:"var(--hint)"}}></i>
+            </a>`)}
+          </div>
         </div>
       </div>
-    </>
-  );
+      <div style=${{padding:"12px 16px",borderTop:"1px solid var(--border)",fontSize:10,color:"var(--hint)"}}>
+        ⚡ 전기차 보조금 모니터 v1.1 · Powered by Claude AI
+      </div>
+    </div>
+  </>`;
 }
 
-/* ─── 메인 앱 ────────────────────────────────────────────────────────────── */
+/* ─── 메인 앱 ────────────────────────────────────────────────────────────────── */
 function App() {
-  const [apiKey,    setApiKey]    = useState(() => DEFAULT_API_KEY || localStorage.getItem("ev_apikey") || "");
-  const [showKey,   setShowKey]   = useState(() => !DEFAULT_API_KEY && !localStorage.getItem("ev_apikey"));
-  const [showSets,  setShowSets]  = useState(false);
+  const [apiKey,   setApiKey]   = useState(() => DEFAULT_API_KEY || localStorage.getItem("ev_apikey") || "");
+  const [showKey,  setShowKey]  = useState(() => !DEFAULT_API_KEY && !localStorage.getItem("ev_apikey"));
+  const [showSets, setShowSets] = useState(false);
+  const [selSido,  setSelSido]  = useState(null);
+  const [selSg,    setSelSg]    = useState(null);
+  const [exp,      setExp]      = useState({});
+  const [vt,       setVt]       = useState("passenger");
+  const [favs,     setFavs]     = useState(() => { try { return JSON.parse(localStorage.getItem("ev_favs") || "[]"); } catch { return []; } });
+  const [sbQ,      setSbQ]      = useState("");
+  const [gQ,       setGQ]       = useState("");
+  const [gR,       setGR]       = useState([]);
+  const [loading,  setLoading]  = useState(false);
+  const [dat,      setDat]      = useState(null);
+  const [err,      setErr]      = useState(null);
+  const [ft,       setFt]       = useState(null);
 
-  const [selSido, setSelSido] = useState(null);
-  const [selSg,   setSelSg]   = useState(null);
-  const [exp,     setExp]     = useState({});
-  const [vt,      setVt]      = useState("passenger");
+  const full   = selSido && selSg ? selSido + " " + selSg : selSido;
+  const isFav  = favs.some(f => f.sido === selSido && f.sg === selSg);
 
-  const [favs, setFavs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ev_favs") || "[]"); }
-    catch { return []; }
-  });
-
-  const [sbQ, setSbQ] = useState("");
-  const [gQ,  setGQ]  = useState("");
-  const [gR,  setGR]  = useState([]);
-
-  const [loading, setLoading] = useState(false);
-  const [dat,     setDat]     = useState(null);
-  const [err,     setErr]     = useState(null);
-  const [ft,      setFt]      = useState(null);
-
-  const full = selSido && selSg ? `${selSido} ${selSg}` : selSido;
-  const isFav = favs.some(f => f.sido === selSido && f.sg === selSg);
-
-  /* ── 즐겨찾기 ── */
   const toggleFav = () => {
     if (!selSido) return;
-    let next;
-    if (isFav) next = favs.filter(f => !(f.sido === selSido && f.sg === selSg));
-    else       next = [{ sido: selSido, sg: selSg }, ...favs].slice(0, 12);
+    const next = isFav
+      ? favs.filter(f => !(f.sido === selSido && f.sg === selSg))
+      : [{sido:selSido, sg:selSg}, ...favs].slice(0,12);
     setFavs(next);
     localStorage.setItem("ev_favs", JSON.stringify(next));
   };
 
-  const clearFavs = () => {
-    setFavs([]);
-    localStorage.removeItem("ev_favs");
-    setShowSets(false);
-  };
+  const clearFavs = () => { setFavs([]); localStorage.removeItem("ev_favs"); setShowSets(false); };
 
-  /* ── API 키 저장 ── */
-  const saveKey = (k) => {
-    localStorage.setItem("ev_apikey", k);
-    setApiKey(k);
-    setShowKey(false);
-    setShowSets(false);
-  };
+  const saveKey = k => { localStorage.setItem("ev_apikey", k); setApiKey(k); setShowKey(false); setShowSets(false); };
 
-  /* ── API 키 삭제 (DEFAULT_API_KEY가 있으면 그것으로 복원) ── */
   const resetKey = () => {
     localStorage.removeItem("ev_apikey");
-    if (DEFAULT_API_KEY) {
-      setApiKey(DEFAULT_API_KEY);
-      setShowKey(false);
-    } else {
-      setApiKey("");
-      setShowKey(true);
-    }
+    if (DEFAULT_API_KEY) { setApiKey(DEFAULT_API_KEY); setShowKey(false); }
+    else { setApiKey(""); setShowKey(true); }
     setShowSets(false);
   };
 
-  /* ── 지역 선택 ── */
-  const pick = (sido, sg = null) => {
+  const pick = (sido, sg) => {
+    sg = sg !== undefined ? sg : null;
     setSelSido(sido); setSelSg(sg);
-    setExp(p => ({ ...p, [sido]: true }));
-    setGQ(""); setGR([]);
-    setShowSets(false);
+    setExp(p => Object.assign({}, p, {[sido]:true}));
+    setGQ(""); setGR([]); setShowSets(false);
   };
 
-  /* ── 전체 검색 ── */
   const onGQ = q => {
     setGQ(q);
     if (!q.trim()) { setGR([]); return; }
     const r = [];
-    Object.entries(REGIONS).forEach(([s, list]) => {
-      if (s.includes(q)) r.push({ sido: s, sg: null, label: s });
-      list.forEach(g => { if (g.includes(q)) r.push({ sido: s, sg: g, label: `${shortSido(s)} ${g}` }); });
+    Object.entries(REGIONS).forEach(([s,list]) => {
+      if (s.includes(q)) r.push({sido:s, sg:null, label:s});
+      list.forEach(g => { if (g.includes(q)) r.push({sido:s, sg:g, label:shortSido(s)+" "+g}); });
     });
-    setGR(r.slice(0, 8));
+    setGR(r.slice(0,8));
   };
 
-  /* ── 데이터 조회 ── */
   const doLoad = useCallback(async () => {
     if (!full || !apiKey) return;
     setLoading(true); setErr(null); setDat(null);
     try {
       const d = await fetchSubsidy(full, apiKey);
       setDat(d);
-      setFt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
-    } catch (e) {
-      setErr(e.message || "조회 실패");
-    } finally { setLoading(false); }
+      setFt(new Date().toLocaleTimeString("ko-KR", {hour:"2-digit", minute:"2-digit"}));
+    } catch(e) { setErr(e.message || "조회 실패"); }
+    finally { setLoading(false); }
   }, [full, apiKey]);
 
   useEffect(() => { if (full && apiKey) doLoad(); }, [full]);
 
-  const vd = dat?.[vt === "passenger" ? "passenger" : "truck"];
-  const sbList = Object.keys(REGIONS).filter(s => !sbQ || s.includes(sbQ) || REGIONS[s].some(g => g.includes(sbQ)));
-  const favLabel = f => `${shortSido(f.sido)}${f.sg ? " " + f.sg : ""}`;
+  const vd      = dat ? dat[vt === "passenger" ? "passenger" : "truck"] : null;
+  const sbList  = Object.keys(REGIONS).filter(s => !sbQ || s.includes(sbQ) || REGIONS[s].some(g => g.includes(sbQ)));
+  const favLabel = f => shortSido(f.sido) + (f.sg ? " " + f.sg : "");
+  const apiKeyMasked = apiKey ? apiKey.slice(0,10) + "········" + apiKey.slice(-4) : "미설정";
 
-  return (
-    <>
-      {showKey  && <ApiKeyModal onSave={saveKey}/>}
-      {showSets && <SettingsPanel
-        onClose={() => setShowSets(false)}
-        onChangeKey={() => { setShowSets(false); setShowKey(true); }}
-        onResetKey={resetKey}
-        onClearFavs={clearFavs}
-        apiKeyMasked={apiKey ? `${apiKey.slice(0,10)}${"·".repeat(8)}${apiKey.slice(-4)}` : "미설정"}
-        isDefaultKey={!!DEFAULT_API_KEY && apiKey === DEFAULT_API_KEY}
-      />}
+  const BREAKDOWN = [
+    {k:"national", icon:"ti-building-bank",      lbl:"국비 (환경부)"},
+    {k:"city",     icon:"ti-building",            lbl:"지방비 (시·도)"},
+    {k:"district", icon:"ti-home",                lbl:"지방비 (시·군·구)"},
+    {k:"corp",     icon:"ti-building-factory-2",  lbl:"공단 지원"},
+  ];
 
-      {/* ── 헤더 ── */}
-      <div style={{background:"#0D0C0A",color:"#fff",padding:"0 14px",height:48,display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid #1E1E1C",flexShrink:0,position:"relative",zIndex:60}}>
-        <i className="ti ti-bolt" style={{fontSize:18,color:"#FBBF24"}}/>
-        <span style={{fontWeight:700,fontSize:14,letterSpacing:"-0.3px",whiteSpace:"nowrap"}}>전기차 보조금 모니터</span>
-
-        {/* 글로벌 검색 */}
-        <div style={{position:"relative",flex:1,maxWidth:420}}>
-          <i className="ti ti-search" style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#777",pointerEvents:"none"}}/>
-          <input value={gQ} onChange={e => onGQ(e.target.value)}
-            onBlur={() => setTimeout(() => setGR([]), 200)}
-            placeholder="시도·시군구 검색... (예: 강남구, 수원, 해운대)"
-            style={{width:"100%",padding:"7px 10px 7px 32px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,color:"#fff",fontSize:12,outline:"none"}}
-          />
-          {gR.length > 0 && (
-            <div style={{position:"absolute",top:"calc(100% + 5px)",left:0,right:0,background:"var(--card)",border:"1px solid var(--border)",borderRadius:9,boxShadow:"0 10px 28px rgba(0,0,0,.18)",zIndex:200,overflow:"hidden",animation:"fadeIn .15s ease"}}>
-              {gR.map((r, i) => (
-                <div key={i} onMouseDown={() => pick(r.sido, r.sg)}
-                  style={{padding:"9px 13px",fontSize:12,cursor:"pointer",color:"var(--text)",borderBottom:i < gR.length-1?"1px solid #F2F1EC":"none",background:"#fff"}}
-                  onMouseEnter={e => e.currentTarget.style.background="#F5F4EF"}
-                  onMouseLeave={e => e.currentTarget.style.background="#fff"}>
-                  <i className="ti ti-map-pin" style={{fontSize:11,marginRight:5,color:"var(--hint)"}}/>
-                  {r.label}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-          {ft && <span style={{fontSize:10,color:"#666"}}>조회 {ft}</span>}
-          {/* ev.or.kr 바로가기 */}
-          <a href="https://www.ev.or.kr" target="_blank" rel="noopener noreferrer"
-            style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:6,background:"rgba(255,255,255,.08)",color:"#ccc",fontSize:11,textDecoration:"none"}}>
-            ev.or.kr <i className="ti ti-external-link" style={{fontSize:10}}/>
-          </a>
-          <button onClick={() => setShowSets(true)}
-            style={{border:"none",background:"rgba(255,255,255,.08)",borderRadius:6,padding:"5px 8px",cursor:"pointer",color:"#aaa",lineHeight:1}}>
-            <i className="ti ti-settings" style={{fontSize:15}}/>
-          </button>
-        </div>
+  return html`<>
+    ${showKey  ? html`<${ApiKeyModal} onSave=${saveKey}/>` : ""}
+    ${showSets ? html`<${SettingsPanel}
+      onClose=${() => setShowSets(false)}
+      onChangeKey=${() => { setShowSets(false); setShowKey(true); }}
+      onResetKey=${resetKey}
+      onClearFavs=${clearFavs}
+      apiKeyMasked=${apiKeyMasked}
+      isDefaultKey=${!!(DEFAULT_API_KEY && apiKey === DEFAULT_API_KEY)}
+    />` : ""}
+    <div style=${{background:"#0D0C0A",color:"#fff",padding:"0 14px",height:48,display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid #1E1E1C",flexShrink:0,position:"relative",zIndex:60}}>
+      <i className="ti ti-bolt" style=${{fontSize:18,color:"#FBBF24"}}></i>
+      <span style=${{fontWeight:700,fontSize:14,letterSpacing:"-0.3px",whiteSpace:"nowrap"}}>전기차 보조금 모니터</span>
+      <div style=${{position:"relative",flex:1,maxWidth:420}}>
+        <i className="ti ti-search" style=${{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#777",pointerEvents:"none"}}></i>
+        <input value=${gQ} onChange=${e => onGQ(e.target.value)}
+          onBlur=${() => setTimeout(() => setGR([]), 200)}
+          placeholder="시도·시군구 검색... (예: 강남구, 수원, 해운대)"
+          style=${{width:"100%",padding:"7px 10px 7px 32px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,color:"#fff",fontSize:12,outline:"none"}}
+        />
+        ${gR.length > 0 ? html`<div style=${{position:"absolute",top:"calc(100% + 5px)",left:0,right:0,background:"var(--card)",border:"1px solid var(--border)",borderRadius:9,boxShadow:"0 10px 28px rgba(0,0,0,.18)",zIndex:200,overflow:"hidden",animation:"fadeIn .15s ease"}}>
+          ${gR.map((r,i) => html`<div key=${i}
+            onMouseDown=${() => pick(r.sido, r.sg)}
+            style=${{padding:"9px 13px",fontSize:12,cursor:"pointer",color:"var(--text)",borderBottom:i<gR.length-1?"1px solid #F2F1EC":"none",background:"#fff"}}
+            onMouseEnter=${e => e.currentTarget.style.background="#F5F4EF"}
+            onMouseLeave=${e => e.currentTarget.style.background="#fff"}>
+            <i className="ti ti-map-pin" style=${{fontSize:11,marginRight:5,color:"var(--hint)"}}></i>
+            ${r.label}
+          </div>`)}
+        </div>` : ""}
       </div>
-
-      {/* ── 즐겨찾기 바 ── */}
-      {favs.length > 0 && (
-        <div style={{background:"#161614",padding:"5px 14px",display:"flex",alignItems:"center",gap:6,overflowX:"auto",flexShrink:0,borderBottom:"1px solid #1E1E1C"}}>
-          <i className="ti ti-star-filled" style={{fontSize:10,color:"#FBBF24",flexShrink:0,marginRight:2}}/>
-          {favs.map((f, i) => {
-            const active = f.sido === selSido && f.sg === selSg;
-            return (
-              <button key={i} onClick={() => pick(f.sido, f.sg)} className="chip"
-                style={{padding:"3px 11px",borderRadius:20,border:"none",background:active?"#185FA5":"rgba(255,255,255,.09)",color:active?"#fff":"#aaa",fontSize:11,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .15s"}}>
-                {favLabel(f)}
-              </button>
-            );
+      <div style=${{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+        ${ft ? html`<span style=${{fontSize:10,color:"#666"}}>조회 ${ft}</span>` : ""}
+        <a href="https://www.ev.or.kr" target="_blank" rel="noopener noreferrer"
+          style=${{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:6,background:"rgba(255,255,255,.08)",color:"#ccc",fontSize:11,textDecoration:"none"}}>
+          ev.or.kr <i className="ti ti-external-link" style=${{fontSize:10}}></i>
+        </a>
+        <button onClick=${() => setShowSets(true)}
+          style=${{border:"none",background:"rgba(255,255,255,.08)",borderRadius:6,padding:"5px 8px",cursor:"pointer",color:"#aaa",lineHeight:1}}>
+          <i className="ti ti-settings" style=${{fontSize:15}}></i>
+        </button>
+      </div>
+    </div>
+    ${favs.length > 0 ? html`<div style=${{background:"#161614",padding:"5px 14px",display:"flex",alignItems:"center",gap:6,overflowX:"auto",flexShrink:0,borderBottom:"1px solid #1E1E1C"}}>
+      <i className="ti ti-star-filled" style=${{fontSize:10,color:"#FBBF24",flexShrink:0,marginRight:2}}></i>
+      ${favs.map((f,i) => html`<button key=${i} onClick=${() => pick(f.sido, f.sg)} className="chip"
+        style=${{padding:"3px 11px",borderRadius:20,border:"none",
+          background:(f.sido===selSido&&f.sg===selSg)?"#185FA5":"rgba(255,255,255,.09)",
+          color:(f.sido===selSido&&f.sg===selSg)?"#fff":"#aaa",
+          fontSize:11,fontWeight:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all .15s"}}>
+        ${favLabel(f)}
+      </button>`)}
+    </div>` : ""}
+    <div style=${{display:"flex",flex:1,overflow:"hidden"}}>
+      <div style=${{width:174,background:"#111110",color:"#fff",display:"flex",flexDirection:"column",borderRight:"1px solid #1E1E1C",flexShrink:0}}>
+        <div style=${{padding:"8px 10px",borderBottom:"1px solid #1E1E1C"}}>
+          <input value=${sbQ} onChange=${e => setSbQ(e.target.value)} placeholder="지역 필터..."
+            style=${{width:"100%",padding:"5px 9px",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,color:"#fff",fontSize:11,outline:"none"}}/>
+        </div>
+        <div style=${{overflowY:"auto",flex:1}}>
+          ${sbList.map(sido => {
+            const isExp = !!exp[sido];
+            const sgs = sbQ ? REGIONS[sido].filter(g => g.includes(sbQ) || sido.includes(sbQ)) : REGIONS[sido];
+            const isSel = selSido === sido && !selSg;
+            return html`<div key=${sido}>
+              <div className="sbi" onClick=${() => { setExp(p => Object.assign({}, p, {[sido]:!p[sido]})); pick(sido, null); }}
+                style=${{padding:"8px 10px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",
+                  background:isSel?"rgba(24,95,165,.2)":"transparent",
+                  borderLeft:isSel?"2px solid #185FA5":"2px solid transparent"}}>
+                <span style=${{fontSize:11,fontWeight:isSel?600:400,color:isSel?"#fff":"#AAA"}}>${shortSido(sido)}</span>
+                <i className=${"ti ti-chevron-" + (isExp?"up":"down")} style=${{fontSize:9,color:"#555"}}></i>
+              </div>
+              ${(isExp || sbQ) ? sgs.map(sg => {
+                const isSl = selSido === sido && selSg === sg;
+                return html`<div key=${sg} className="sbr" onClick=${() => pick(sido, sg)}
+                  style=${{padding:"6px 10px 6px 20px",cursor:"pointer",fontSize:11,
+                    color:isSl?"#fff":"#777",
+                    background:isSl?"rgba(24,95,165,.28)":"transparent",
+                    borderLeft:isSl?"2px solid #185FA5":"2px solid transparent",
+                    fontWeight:isSl?600:400}}>
+                  ${sg}
+                </div>`;
+              }) : ""}
+            </div>`;
           })}
         </div>
-      )}
-
-      {/* ── 바디 ── */}
-      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-
-        {/* ── 사이드바 ── */}
-        <div style={{width:174,background:"#111110",color:"#fff",display:"flex",flexDirection:"column",borderRight:"1px solid #1E1E1C",flexShrink:0}}>
-          <div style={{padding:"8px 10px",borderBottom:"1px solid #1E1E1C"}}>
-            <input value={sbQ} onChange={e => setSbQ(e.target.value)} placeholder="지역 필터..."
-              style={{width:"100%",padding:"5px 9px",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,color:"#fff",fontSize:11,outline:"none"}}/>
-          </div>
-          <div style={{overflowY:"auto",flex:1}}>
-            {sbList.map(sido => {
-              const isExp = !!exp[sido];
-              const sgs = sbQ ? REGIONS[sido].filter(g => g.includes(sbQ) || sido.includes(sbQ)) : REGIONS[sido];
-              const isSel = selSido === sido && !selSg;
-              return (
-                <div key={sido}>
-                  <div className="sbi" onClick={() => { setExp(p => ({ ...p, [sido]: !p[sido] })); pick(sido, null); }}
-                    style={{padding:"8px 10px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",background:isSel?"rgba(24,95,165,.2)":"transparent",borderLeft:isSel?"2px solid #185FA5":"2px solid transparent"}}>
-                    <span style={{fontSize:11,fontWeight:isSel?600:400,color:isSel?"#fff":"#AAA"}}>{shortSido(sido)}</span>
-                    <i className={`ti ti-chevron-${isExp?"up":"down"}`} style={{fontSize:9,color:"#555"}}/>
-                  </div>
-                  {(isExp || sbQ) && sgs.map(sg => {
-                    const isSl = selSido === sido && selSg === sg;
-                    return (
-                      <div key={sg} className="sbr" onClick={() => pick(sido, sg)}
-                        style={{padding:"6px 10px 6px 20px",cursor:"pointer",fontSize:11,color:isSl?"#fff":"#777",background:isSl?"rgba(24,95,165,.28)":"transparent",borderLeft:isSl?"2px solid #185FA5":"2px solid transparent",fontWeight:isSl?600:400}}>
-                        {sg}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── 메인 콘텐츠 ── */}
-        <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
-          {!selSido ? (
-            /* 시작 화면 */
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:12,color:"var(--hint)"}}>
-              <i className="ti ti-map-2" style={{fontSize:52}}/>
-              <p style={{fontSize:15,fontWeight:600,color:"var(--muted)"}}>좌측에서 지역을 선택하세요</p>
-              <p style={{fontSize:12}}>시도 → 시군구 선택 시 AI가 최신 보조금 정보를 조회합니다</p>
-              <div style={{marginTop:16,display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:500}}>
-                {[
-                  {label:"무공해차 통합누리집", url:"https://www.ev.or.kr", icon:"ti-charging-pile"},
-                  {label:"환경부 전기차 보조금", url:"https://www.me.go.kr", icon:"ti-leaf"},
-                  {label:"한국환경공단", url:"https://www.keco.or.kr", icon:"ti-building-factory"},
-                  {label:"보조금 상세 조회", url:"https://www.ev.or.kr/portal/buyersGuide/subsidyInfo", icon:"ti-search"},
-                ].map((s,i) => (
-                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                    style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:8,background:"var(--card)",border:"1px solid var(--border)",color:"var(--text)",textDecoration:"none",fontSize:12,fontWeight:500,transition:"all .15s"}}
-                    onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--blue)";e.currentTarget.style.color="var(--blue)"}}
-                    onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text)"}}>
-                    <i className={`ti ${s.icon}`} style={{fontSize:13}}/>
-                    {s.label}
-                    <i className="ti ti-external-link" style={{fontSize:10,color:"var(--hint)"}}/>
-                  </a>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* ── 지역 헤더 ── */}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <h1 style={{fontSize:17,fontWeight:700,letterSpacing:"-0.4px"}}>{full}</h1>
-                  <button onClick={toggleFav} title={isFav?"즐겨찾기 해제":"즐겨찾기 추가"}
-                    style={{border:"none",background:"none",cursor:"pointer",fontSize:17,color:isFav?"#FBBF24":"var(--border)",padding:3,transition:"color .15s",lineHeight:1}}>
-                    <i className={`ti ti-star${isFav?"-filled":""}`}/>
-                  </button>
-                </div>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  {/* 차종 탭 */}
-                  {["passenger","truck"].map(t => (
-                    <button key={t} onClick={() => setVt(t)}
-                      style={{padding:"5px 14px",borderRadius:20,border:"1px solid "+(vt===t?"#1A1A18":"var(--border)"),background:vt===t?"#1A1A18":"var(--card)",color:vt===t?"#fff":"var(--muted)",fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s",display:"flex",alignItems:"center",gap:4}}>
-                      <i className={`ti ti-${t==="passenger"?"car":"truck"}`} style={{fontSize:12}}/>
-                      {t === "passenger" ? "승용" : "화물"}
-                    </button>
-                  ))}
-                  {/* 새로고침 */}
-                  <button onClick={doLoad} disabled={loading}
-                    style={{padding:"5px 12px",borderRadius:20,border:"1px solid var(--border)",background:"var(--card)",color:"var(--muted)",fontSize:11,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
-                    <i className="ti ti-refresh" style={{fontSize:12,animation:loading?"spin 1s infinite linear":"none"}}/>
-                    {loading ? "조회중" : "새로고침"}
-                  </button>
-                </div>
-              </div>
-
-              {/* 로딩 */}
-              {loading && <Skel/>}
-
-              {/* 에러 */}
-              {err && !loading && (
-                <div style={{background:"var(--red-bg)",border:"1px solid #F5CACA",borderRadius:8,padding:"12px 14px",color:"var(--red)",fontSize:12,marginBottom:14,display:"flex",alignItems:"flex-start",gap:8}}>
-                  <i className="ti ti-alert-circle" style={{fontSize:15,flexShrink:0,marginTop:1}}/>
-                  <div>
-                    {err}
-                    <br/>
-                    <a href="https://www.ev.or.kr/portal/buyersGuide/subsidyInfo" target="_blank" rel="noopener noreferrer" style={{color:"var(--blue)",fontWeight:500}}>
-                      ev.or.kr에서 직접 확인하기 <i className="ti ti-external-link" style={{fontSize:10}}/>
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {/* ── 데이터 표시 ── */}
-              {!loading && dat && vd && (
-                <>
-                  {/* 요약 카드 4개 */}
-                  <div style={{display:"flex",gap:10,marginBottom:12}}>
-                    <KCard label="총 보조금" val={vd.total} unit="만원"
-                      sub={vt==="passenger"?"전기승용차 기준":"전기화물차 기준"}
-                      accent="var(--blue)"/>
-                    <KCard label="잔여 지원대수" val={vd.remaining} unit="대"
-                      sub={vd.quota ? `전체 ${vd.quota.toLocaleString()}대` : null}
-                      accent={vd.remaining===0?"var(--red)":"var(--green)"}/>
-                    <div style={{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",flex:1,minWidth:0}}>
-                      <div style={{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:7}}>신청 현황</div>
-                      <Pill s={vd.status}/>
-                      {vd.queue > 0 && <div style={{fontSize:10,color:STATUS["대기"].c,marginTop:6}}>대기 {vd.queue}번</div>}
-                    </div>
-                    <KCard label="신청 기간"
-                      val={vd.period?.split("~")[0] || null}
-                      sub={vd.period?.includes("~") ? `~ ${vd.period.split("~")[1]}` : null}/>
-                  </div>
-
-                  {/* 프로그레스 바 */}
-                  {vd.quota != null && (
-                    <div style={{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",marginBottom:12}}>
-                      <ProgBar total={vd.quota} rem={vd.remaining}/>
-                    </div>
-                  )}
-
-                  {/* 보조금 구성 테이블 */}
-                  <div style={{background:"var(--card)",borderRadius:"var(--radius)",border:"1px solid var(--border)",marginBottom:12,overflow:"hidden"}}>
-                    <div style={{padding:"10px 14px",borderBottom:"1px solid var(--border)",fontSize:11,fontWeight:600,color:"var(--text)"}}>
-                      보조금 구성
-                    </div>
-                    <table style={{width:"100%",borderCollapse:"collapse"}}>
-                      <thead>
-                        <tr>
-                          {["항목","금액 (만원)","비율"].map((h, i) => (
-                            <th key={h} style={{padding:"7px 14px",textAlign:i===0?"left":"right",fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",borderBottom:"1px solid var(--border)",background:"var(--card)"}}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { k:"national", icon:"ti-building-bank",       lbl:"국비 (환경부)" },
-                          { k:"city",     icon:"ti-building",             lbl:"지방비 (시·도)" },
-                          { k:"district", icon:"ti-home",                 lbl:"지방비 (시·군·구)" },
-                          { k:"corp",     icon:"ti-building-factory-2",   lbl:"공단 지원" },
-                        ].map(({ k, icon, lbl }) => {
-                          const v = vd[k];
-                          if (v == null || v === 0) return null;
-                          const pct = vd.total ? Math.round((v / vd.total) * 100) : 0;
-                          return (
-                            <tr key={k} className="row">
-                              <td style={{padding:"8px 14px",fontSize:12,borderBottom:"1px solid #F2F1EC",color:"var(--text)"}}>
-                                <i className={`ti ${icon}`} style={{fontSize:12,marginRight:6,color:"var(--hint)"}}/>
-                                {lbl}
-                              </td>
-                              <td style={{padding:"8px 14px",textAlign:"right",fontSize:13,fontWeight:600,color:"var(--blue)",borderBottom:"1px solid #F2F1EC"}}>
-                                {v.toLocaleString()}
-                              </td>
-                              <td style={{padding:"8px 14px",textAlign:"right",fontSize:11,color:"var(--muted)",borderBottom:"1px solid #F2F1EC"}}>
-                                {pct}%
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        <tr style={{background:"#FAFAF7"}}>
-                          <td style={{padding:"10px 14px",fontSize:12,fontWeight:700}}>합계</td>
-                          <td style={{padding:"10px 14px",textAlign:"right",fontSize:14,fontWeight:700,color:"var(--text)"}}>
-                            {vd.total != null ? vd.total.toLocaleString() : "—"}
-                          </td>
-                          <td style={{padding:"10px 14px",textAlign:"right",fontSize:11,color:"var(--muted)"}}>100%</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* 특이사항 */}
-                  {vd.note && (
-                    <div style={{background:"var(--blue-bg)",border:"1px solid #C7D8F8",borderRadius:8,padding:"10px 14px",fontSize:11,color:"var(--blue)",marginBottom:10}}>
-                      <i className="ti ti-info-circle" style={{marginRight:5}}/>{vd.note}
-                    </div>
-                  )}
-                  {dat.notice && (
-                    <div style={{background:"var(--amber-bg)",border:"1px solid #E8D5A0",borderRadius:8,padding:"10px 14px",fontSize:11,color:"var(--amber)",marginBottom:10}}>
-                      <i className="ti ti-speakerphone" style={{marginRight:5}}/>{dat.notice}
-                    </div>
-                  )}
-
-                  {/* 담당자 연락처 */}
-                  {dat.contacts?.length > 0 && (
-                    <div style={{background:"var(--card)",borderRadius:"var(--radius)",border:"1px solid var(--border)",marginBottom:12,overflow:"hidden"}}>
-                      <div style={{padding:"10px 14px",borderBottom:"1px solid var(--border)",fontSize:11,fontWeight:600}}>
-                        <i className="ti ti-phone" style={{marginRight:5}}/>담당자 연락처
-                      </div>
-                      <div style={{padding:12,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:8}}>
-                        {dat.contacts.map((c, i) => (
-                          <div key={i} style={{padding:"10px 12px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--border)"}}>
-                            <div style={{fontSize:11,fontWeight:600,marginBottom:6,color:"var(--text)"}}>{c.dept || "담당부서"}</div>
-                            {c.phone && (
-                              <a href={`tel:${c.phone.replace(/[^0-9]/g,"")}`}
-                                style={{display:"flex",alignItems:"center",gap:4,fontSize:12,color:"var(--blue)",fontWeight:500,textDecoration:"none",marginBottom:3}}>
-                                <i className="ti ti-phone" style={{fontSize:11}}/>{c.phone}
-                              </a>
-                            )}
-                            {c.email && (
-                              <a href={`mailto:${c.email}`}
-                                style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--muted)",textDecoration:"none"}}>
-                                <i className="ti ti-mail" style={{fontSize:10}}/>{c.email}
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 출처 및 공식 사이트 링크 */}
-                  <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",fontSize:11,color:"var(--hint)",paddingTop:4,paddingBottom:8}}>
-                    <span>출처:</span>
-                    {(dat.sources || []).filter(Boolean).map((s, i) => (
-                      <a key={i} href={s} target="_blank" rel="noopener noreferrer"
-                        style={{color:"var(--blue)"}}>
-                        {s.replace(/https?:\/\//,"").split("/")[0]}
-                        <i className="ti ti-external-link" style={{fontSize:9,marginLeft:2}}/>
-                      </a>
-                    ))}
-                    <a href={dat.official_url || "https://www.ev.or.kr/portal/buyersGuide/subsidyInfo"}
-                      target="_blank" rel="noopener noreferrer"
-                      style={{marginLeft:4,background:"var(--blue)",color:"#fff",padding:"3px 10px",borderRadius:5,fontSize:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,fontWeight:500}}>
-                      공식 사이트에서 확인 <i className="ti ti-external-link" style={{fontSize:9}}/>
-                    </a>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
       </div>
-    </>
-  );
+      <div style=${{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+        ${!selSido ? html`<div style=${{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:12,color:"var(--hint)"}}>
+          <i className="ti ti-map-2" style=${{fontSize:52}}></i>
+          <p style=${{fontSize:15,fontWeight:600,color:"var(--muted)"}}>좌측에서 지역을 선택하세요</p>
+          <p style=${{fontSize:12}}>시도 → 시군구 선택 시 AI가 최신 보조금 정보를 조회합니다</p>
+          <div style=${{marginTop:16,display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:500}}>
+            ${[
+              {label:"무공해차 통합누리집", url:"https://www.ev.or.kr",                                icon:"ti-charging-pile"},
+              {label:"환경부 전기차 보조금", url:"https://www.me.go.kr",                               icon:"ti-leaf"},
+              {label:"한국환경공단",         url:"https://www.keco.or.kr",                              icon:"ti-building-factory"},
+              {label:"보조금 상세 조회",     url:"https://www.ev.or.kr/portal/buyersGuide/subsidyInfo", icon:"ti-search"},
+            ].map((s,i) => html`<a key=${i} href=${s.url} target="_blank" rel="noopener noreferrer"
+              style=${{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:8,
+                background:"var(--card)",border:"1px solid var(--border)",color:"var(--text)",
+                textDecoration:"none",fontSize:12,fontWeight:500,transition:"all .15s"}}
+              onMouseEnter=${e => { e.currentTarget.style.borderColor="var(--blue)"; e.currentTarget.style.color="var(--blue)"; }}
+              onMouseLeave=${e => { e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.color="var(--text)"; }}>
+              <i className=${"ti " + s.icon} style=${{fontSize:13}}></i>
+              ${s.label}
+              <i className="ti ti-external-link" style=${{fontSize:10,color:"var(--hint)"}}></i>
+            </a>`)}
+          </div>
+        </div>` : html`<div>
+          <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div style=${{display:"flex",alignItems:"center",gap:8}}>
+              <h1 style=${{fontSize:17,fontWeight:700,letterSpacing:"-0.4px"}}>${full}</h1>
+              <button onClick=${toggleFav} title=${isFav?"즐겨찾기 해제":"즐겨찾기 추가"}
+                style=${{border:"none",background:"none",cursor:"pointer",fontSize:17,color:isFav?"#FBBF24":"var(--border)",padding:3,transition:"color .15s",lineHeight:1}}>
+                <i className=${"ti ti-star" + (isFav?"-filled":"")}></i>
+              </button>
+            </div>
+            <div style=${{display:"flex",gap:6,alignItems:"center"}}>
+              ${["passenger","truck"].map(t => html`<button key=${t} onClick=${() => setVt(t)}
+                style=${{padding:"5px 14px",borderRadius:20,border:"1px solid "+(vt===t?"#1A1A18":"var(--border)"),
+                  background:vt===t?"#1A1A18":"var(--card)",color:vt===t?"#fff":"var(--muted)",
+                  fontSize:11,fontWeight:500,cursor:"pointer",transition:"all .15s",display:"flex",alignItems:"center",gap:4}}>
+                <i className=${"ti ti-" + (t==="passenger"?"car":"truck")} style=${{fontSize:12}}></i>
+                ${t === "passenger" ? "승용" : "화물"}
+              </button>`)}
+              <button onClick=${doLoad} disabled=${loading}
+                style=${{padding:"5px 12px",borderRadius:20,border:"1px solid var(--border)",background:"var(--card)",color:"var(--muted)",fontSize:11,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
+                <i className="ti ti-refresh" style=${{fontSize:12,animation:loading?"spin 1s infinite linear":"none"}}></i>
+                ${loading ? "조회중" : "새로고침"}
+              </button>
+            </div>
+          </div>
+
+          ${loading ? html`<${Skel}/>` : ""}
+
+          ${err && !loading ? html`<div style=${{background:"var(--red-bg)",border:"1px solid #F5CACA",borderRadius:8,padding:"12px 14px",color:"var(--red)",fontSize:12,marginBottom:14,display:"flex",alignItems:"flex-start",gap:8}}>
+            <i className="ti ti-alert-circle" style=${{fontSize:15,flexShrink:0,marginTop:1}}></i>
+            <div>
+              ${err}<br/>
+              <a href="https://www.ev.or.kr/portal/buyersGuide/subsidyInfo" target="_blank" rel="noopener noreferrer" style=${{color:"var(--blue)",fontWeight:500}}>
+                ev.or.kr에서 직접 확인하기 <i className="ti ti-external-link" style=${{fontSize:10}}></i>
+              </a>
+            </div>
+          </div>` : ""}
+
+          ${!loading && dat && vd ? html`<div>
+            <div style=${{display:"flex",gap:10,marginBottom:12}}>
+              <${KCard} label="총 보조금" val=${vd.total} unit="만원" sub=${vt==="passenger"?"전기승용차 기준":"전기화물차 기준"} accent="var(--blue)"/>
+              <${KCard} label="잔여 지원대수" val=${vd.remaining} unit="대" sub=${vd.quota?"전체 "+vd.quota.toLocaleString()+"대":null} accent=${vd.remaining===0?"var(--red)":"var(--green)"}/>
+              <div style=${{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",flex:1,minWidth:0}}>
+                <div style=${{fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",marginBottom:7}}>신청 현황</div>
+                <${Pill} s=${vd.status}/>
+                ${vd.queue > 0 ? html`<div style=${{fontSize:10,color:STATUS["대기"].c,marginTop:6}}>대기 ${vd.queue}번</div>` : ""}
+              </div>
+              <${KCard} label="신청 기간" val=${vd.period ? vd.period.split("~")[0] : null} sub=${vd.period && vd.period.includes("~") ? "~ "+vd.period.split("~")[1] : null}/>
+            </div>
+            ${vd.quota != null ? html`<div style=${{background:"var(--card)",borderRadius:"var(--radius)",padding:"12px 14px",border:"1px solid var(--border)",marginBottom:12}}>
+              <${ProgBar} total=${vd.quota} rem=${vd.remaining}/>
+            </div>` : ""}
+            <div style=${{background:"var(--card)",borderRadius:"var(--radius)",border:"1px solid var(--border)",marginBottom:12,overflow:"hidden"}}>
+              <div style=${{padding:"10px 14px",borderBottom:"1px solid var(--border)",fontSize:11,fontWeight:600,color:"var(--text)"}}>보조금 구성</div>
+              <table style=${{width:"100%",borderCollapse:"collapse"}}>
+                <thead>
+                  <tr>
+                    ${["항목","금액 (만원)","비율"].map((h,i) => html`<th key=${i} style=${{padding:"7px 14px",textAlign:i===0?"left":"right",fontSize:10,fontWeight:600,color:"var(--muted)",letterSpacing:"0.3px",borderBottom:"1px solid var(--border)",background:"var(--card)"}}>${h}</th>`)}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${BREAKDOWN.map(({k,icon,lbl}) => {
+                    const v = vd[k];
+                    if (v == null || v === 0) return null;
+                    const pct = vd.total ? Math.round((v/vd.total)*100) : 0;
+                    return html`<tr key=${k} className="row">
+                      <td style=${{padding:"8px 14px",fontSize:12,borderBottom:"1px solid #F2F1EC",color:"var(--text)"}}>
+                        <i className=${"ti "+icon} style=${{fontSize:12,marginRight:6,color:"var(--hint)"}} aria-hidden="true"></i>${lbl}
+                      </td>
+                      <td style=${{padding:"8px 14px",textAlign:"right",fontSize:13,fontWeight:600,color:"var(--blue)",borderBottom:"1px solid #F2F1EC"}}>${v.toLocaleString()}</td>
+                      <td style=${{padding:"8px 14px",textAlign:"right",fontSize:11,color:"var(--muted)",borderBottom:"1px solid #F2F1EC"}}>${pct}%</td>
+                    </tr>`;
+                  })}
+                  <tr style=${{background:"#FAFAF7"}}>
+                    <td style=${{padding:"10px 14px",fontSize:12,fontWeight:700}}>합계</td>
+                    <td style=${{padding:"10px 14px",textAlign:"right",fontSize:14,fontWeight:700,color:"var(--text)"}}>${vd.total != null ? vd.total.toLocaleString() : "—"}</td>
+                    <td style=${{padding:"10px 14px",textAlign:"right",fontSize:11,color:"var(--muted)"}}>100%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            ${vd.note ? html`<div style=${{background:"var(--blue-bg)",border:"1px solid #C7D8F8",borderRadius:8,padding:"10px 14px",fontSize:11,color:"var(--blue)",marginBottom:10}}>
+              <i className="ti ti-info-circle" style=${{marginRight:5}}></i>${vd.note}
+            </div>` : ""}
+            ${dat.notice ? html`<div style=${{background:"var(--amber-bg)",border:"1px solid #E8D5A0",borderRadius:8,padding:"10px 14px",fontSize:11,color:"var(--amber)",marginBottom:10}}>
+              <i className="ti ti-speakerphone" style=${{marginRight:5}}></i>${dat.notice}
+            </div>` : ""}
+            ${dat.contacts && dat.contacts.length > 0 ? html`<div style=${{background:"var(--card)",borderRadius:"var(--radius)",border:"1px solid var(--border)",marginBottom:12,overflow:"hidden"}}>
+              <div style=${{padding:"10px 14px",borderBottom:"1px solid var(--border)",fontSize:11,fontWeight:600}}>
+                <i className="ti ti-phone" style=${{marginRight:5}}></i>담당자 연락처
+              </div>
+              <div style=${{padding:12,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:8}}>
+                ${dat.contacts.map((c,i) => html`<div key=${i} style=${{padding:"10px 12px",borderRadius:8,background:"var(--bg)",border:"1px solid var(--border)"}}>
+                  <div style=${{fontSize:11,fontWeight:600,marginBottom:6,color:"var(--text)"}}>${c.dept || "담당부서"}</div>
+                  ${c.phone ? html`<a href=${"tel:"+c.phone.replace(/[^0-9]/g,"")}
+                    style=${{display:"flex",alignItems:"center",gap:4,fontSize:12,color:"var(--blue)",fontWeight:500,textDecoration:"none",marginBottom:3}}>
+                    <i className="ti ti-phone" style=${{fontSize:11}}></i>${c.phone}
+                  </a>` : ""}
+                  ${c.email ? html`<a href=${"mailto:"+c.email}
+                    style=${{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--muted)",textDecoration:"none"}}>
+                    <i className="ti ti-mail" style=${{fontSize:10}}></i>${c.email}
+                  </a>` : ""}
+                </div>`)}
+              </div>
+            </div>` : ""}
+            <div style=${{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",fontSize:11,color:"var(--hint)",paddingTop:4,paddingBottom:8}}>
+              <span>출처:</span>
+              ${(dat.sources || []).filter(Boolean).map((s,i) => html`<a key=${i} href=${s} target="_blank" rel="noopener noreferrer" style=${{color:"var(--blue)"}}>
+                ${s.replace(/https?:\/\//,"").split("/")[0]}
+                <i className="ti ti-external-link" style=${{fontSize:9,marginLeft:2}}></i>
+              </a>`)}
+              <a href=${dat.official_url || "https://www.ev.or.kr/portal/buyersGuide/subsidyInfo"}
+                target="_blank" rel="noopener noreferrer"
+                style=${{marginLeft:4,background:"var(--blue)",color:"#fff",padding:"3px 10px",borderRadius:5,fontSize:10,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,fontWeight:500}}>
+                공식 사이트에서 확인 <i className="ti ti-external-link" style=${{fontSize:9}}></i>
+              </a>
+            </div>
+          </div>` : ""}
+        </div>`}
+      </div>
+    </div>
+  </>`;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App}/>`);
 </script>
 </body>
 </html>
