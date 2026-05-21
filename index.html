@@ -1097,44 +1097,57 @@ function parseCSV(text) {
 /* ─── 보조금 조회 API ─────────────────────────────────────── */
 async function fetchSubsidy(region, apiKey) {
   const yr = new Date().getFullYear();
-  const prompt = `웹 검색으로 "${region}" ${yr}년 전기차 보조금 현황을 조회하세요. ev.or.kr(무공해차 통합누리집)과 해당 지자체 공식 홈페이지를 참고해주세요.
-순수 JSON만 반환 (마크다운 없이):
-{"region":"${region}","year":${yr},"passenger":{"national":국비만원또는null,"city":시도비만원또는null,"district":시군구비만원또는null,"corp":공단지원만원또는null,"total":합계만원또는null,"quota":총지원대수또는null,"remaining":잔여대수또는null,"status":"접수중|마감|대기|미정","queue":대기번호또는0,"period":"신청기간또는null","note":"특이사항또는null"},"truck":{"national":null,"city":null,"district":null,"corp":null,"total":null,"quota":null,"remaining":null,"status":"미정","queue":0,"period":null,"note":null},"contacts":[{"dept":"담당부서명","phone":"전화번호","email":null}],"official_url":null,"sources":[],"notice":null}`;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      tools: [{
-        type: "web_search_20250305",
-        name: "web_search"
-      }],
-      messages: [{
-        role: "user",
-        content: prompt
-      }]
-    })
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    if (res.status === 401) throw new Error("API 키가 올바르지 않습니다.");
-    throw new Error(e?.error?.message || `오류 (${res.status})`);
-  }
-  const d = await res.json();
-  const txt = (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  const m = txt.match(/\{[\s\S]*\}/);
-  if (m) {
+  // 프롬프트 최소화 (토큰 절약)
+  const prompt = `"${region}" ${yr}년 전기차 보조금을 ev.or.kr에서 검색. JSON만 반환:
+{"passenger":{"national":N,"city":N,"district":N,"corp":N,"total":N,"quota":N,"remaining":N,"status":"접수중|마감|대기|미정","queue":0,"period":"MM.DD~MM.DD","note":""},"truck":{"national":N,"city":N,"district":N,"corp":N,"total":N,"quota":N,"remaining":N,"status":"미정","queue":0,"period":null,"note":""},"contacts":[{"dept":"","phone":""}],"official_url":"","sources":[],"notice":""}
+숫자는 만원 단위 정수, 모르면 null`;
+
+  const call = async () => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      if (res.status === 401) throw new Error("API 키가 올바르지 않습니다.");
+      if (res.status === 429) {
+        const retry = parseInt(res.headers.get("retry-after") || "15");
+        throw Object.assign(new Error(`rate_limit`), { retryAfter: retry });
+      }
+      throw new Error(e?.error?.message || `오류 (${res.status})`);
+    }
+    const d = await res.json();
+    const txt = (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch (_) {} }
+    throw new Error("파싱 실패 — 다시 시도해 주세요");
+  };
+
+  // 429 시 최대 2회 재시도
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return JSON.parse(m[0]);
-    } catch (_) {}
+      return await call();
+    } catch (e) {
+      if (e.message === "rate_limit" && attempt < 2) {
+        const wait = (e.retryAfter || 15) * 1000;
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      if (e.message === "rate_limit") throw new Error(`요청이 너무 많습니다. ${e.retryAfter||15}초 후 다시 시도해 주세요.`);
+      throw e;
+    }
   }
-  throw new Error("파싱 실패 — 다시 시도해 주세요");
 }
 
 /* ─── 상태 색상 ────────────────────────────────────────────── */
@@ -2704,7 +2717,11 @@ function App() {
         minute: "2-digit"
       }));
     } catch (e) {
-      setErr(e.message);
+      if (e.message && e.message.includes('요청이 너무')) {
+        setErr('⏳ ' + e.message);
+      } else {
+        setErr(e.message);
+      }
     } finally {
       setLoading(false);
     }
