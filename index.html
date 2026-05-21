@@ -16,53 +16,48 @@
   --red:#A32D2D;--red-bg:#FCEBEB;
   --green:#3B6D11;--green-bg:#EAF3DE;
   --amber:#854F0B;--amber-bg:#FAEEDA;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
   --radius:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);font-weight:300;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+body{font-family:var(--font);font-weight:300;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
 #root{height:100vh;display:flex;flex-direction:column}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#C8C6BE;border-radius:2px}
-input::placeholder{color:#999;font-size:11px}
+::-webkit-scrollbar-thumb{background:#C8C6BE;border-radius:3px}
+input,button,select{font-family:var(--font);font-size:14px}
+input::placeholder{color:#999;font-size:13px}
 a{color:var(--blue);text-decoration:none}
 a:hover{text-decoration:underline;opacity:.85}
 .sbi:hover{background:rgba(255,255,255,.12)!important}
 .sbr:hover{background:rgba(255,255,255,.08)!important}
 .row:hover td{background:#FAFAF7!important}
 .chip:hover{opacity:.8}
-button{font-family:var(--font)}
-
-/* ── 폰트 크기 기본 조정 ── */
-body{font-size:15px}
-input,button,select,textarea{font-size:14px}
-input::placeholder{font-size:13px}
-
-/* ── 반응형: 모바일 ─────── */
+/* ── 관리자 테이블 ── */
+.adm-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.adm-tbl th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.3px;border-bottom:2px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:1}
+.adm-tbl td{padding:8px 12px;border-bottom:1px solid #F2F1EC;vertical-align:top}
+.adm-tbl tr:hover td{background:#FAFAF7}
+.adm-inp{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:var(--font);outline:none;background:var(--card)}
+.adm-inp:focus{border-color:var(--blue)}
+/* ── 반응형 ── */
 .mob-only{display:none!important}
 @media(max-width:900px){
   .mob-only{display:flex!important;align-items:center}
   .desk-search{display:none!important}
-  .sidebar-wrap{
-    position:fixed;left:0;top:52px;bottom:0;z-index:300;
-    transform:translateX(-100%);transition:transform .25s ease;
-    box-shadow:4px 0 24px rgba(0,0,0,.35)
-  }
+  .sidebar-wrap{position:fixed;left:0;top:52px;bottom:0;z-index:300;transform:translateX(-100%);transition:transform .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.35)}
   .sidebar-wrap.open{transform:translateX(0)}
   .cards-row{flex-wrap:wrap!important}
   .cards-row>div{min-width:calc(50% - 5px)!important}
   .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .main-pad{padding:12px 14px!important}
 }
-@media(max-width:520px){
-  .cards-row>div{min-width:100%!important}
-}
+@media(max-width:520px){.cards-row>div{min-width:100%!important}}
 </style>
 </head>
 <body>
@@ -70,18 +65,981 @@ input::placeholder{font-size:13px}
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script>
-
 const {
   useState,
   useEffect,
   useCallback,
-  useRef
+  useRef,
+  useMemo
 } = React;
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ★  API 키  —  변경 시 아래 값만 수정
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const DEFAULT_API_KEY = "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";
+const DEFAULT_CONTACTS = [{
+  "sido": "서울",
+  "sigungu": "서울특별시",
+  "dept": "서울시 친환경차량과",
+  "phone": "02-0000-0000",
+  "extra": "다산콜재단(02-120)"
+}, {
+  "sido": "부산",
+  "sigungu": "부산광역시",
+  "dept": "탄소중립정책과",
+  "phone": "051-888-3554",
+  "extra": "전기자동차 문의: 051-120, 888-3551~8"
+}, {
+  "sido": "대구",
+  "sigungu": "대구광역시",
+  "dept": "미래모빌리티과",
+  "phone": "053-803-6371",
+  "extra": "환경부 통합콜센터 1661-0970 / 무공해차 통합누리집 www.ev.or.kr / 법인 2대이상 한국환경공단 032-590-9907"
+}, {
+  "sido": "인천",
+  "sigungu": "인천광역시",
+  "dept": "인천광역시 에너지정책과",
+  "phone": "032-440-4058",
+  "extra": "안내문의전화: 032-440-4058, 4057"
+}, {
+  "sido": "광주",
+  "sigungu": "광주광역시",
+  "dept": "기후대기정책과",
+  "phone": "062-613-4341",
+  "extra": "민원 과다 시 광주광역시 콜센터(062-120) 문의 바랍니다"
+}, {
+  "sido": "대전",
+  "sigungu": "대전광역시",
+  "dept": "대기환경과",
+  "phone": "042-270-3182",
+  "extra": "대전시 대기환경과 042-270-3182 / 대전시 콜센터: 042-120"
+}, {
+  "sido": "울산",
+  "sigungu": "울산광역시",
+  "dept": "환경대기과",
+  "phone": "052-229-3185",
+  "extra": "해울이 콜센터 052-120"
+}, {
+  "sido": "세종",
+  "sigungu": "세종특별자치시",
+  "dept": "환경정책과",
+  "phone": "044-300-4232",
+  "extra": "환경부 통합콜센터(1661-0970) / 법인 등 2대이상 신청: 한국환경공단 032-590-9907 / 안내: 044-120"
+}, {
+  "sido": "경기",
+  "sigungu": "수원시",
+  "dept": "수원시 기후에너지과",
+  "phone": "1899-3300",
+  "extra": "수원시 휴먼콜센터: 1899-3300 / 전기승용차: 031-5191-2455 / 전기화물차: 031-5191-2887"
+}, {
+  "sido": "경기",
+  "sigungu": "성남시",
+  "dept": "기후에너지과",
+  "phone": "031-729-3162",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "의정부시",
+  "dept": "기후에너지과",
+  "phone": "031-828-4443",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "안양시",
+  "dept": "기후대기에너지과",
+  "phone": "031-8045-7000",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "부천시",
+  "dept": "기후에너지과",
+  "phone": "032-625-3170",
+  "extra": "(승용)민원상담: 032-625-3170 / (화물)민원상담: 032-625-3108"
+}, {
+  "sido": "경기",
+  "sigungu": "광명시",
+  "dept": "탄소중립과",
+  "phone": "02-2680-6487",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "평택시",
+  "dept": "환경정책과 대기환경팀",
+  "phone": "031-8024-5000",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "동두천시",
+  "dept": "환경보호과",
+  "phone": "031-860-2243",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "안산시",
+  "dept": "환경정책과",
+  "phone": "031-481-2894",
+  "extra": "안산시 콜센터: 1666-1234"
+}, {
+  "sido": "경기",
+  "sigungu": "고양시",
+  "dept": "고양시 기후에너지과",
+  "phone": "031-909-9000",
+  "extra": "고양시 민원콜센터"
+}, {
+  "sido": "경기",
+  "sigungu": "과천시",
+  "dept": "기후환경과",
+  "phone": "02-3677-2244",
+  "extra": "보급사업 자세한 사항: 무공해차통합누리집-구매 및 지원-구매보조금 지급현황"
+}, {
+  "sido": "경기",
+  "sigungu": "구리시",
+  "dept": "구리시청 환경과",
+  "phone": "031-550-2756",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "남양주시",
+  "dept": "기후에너지과",
+  "phone": "031-590-2610",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "오산시",
+  "dept": "기후환경정책과",
+  "phone": "031-8036-6430",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "시흥시",
+  "dept": "기후에너지과",
+  "phone": "031-310-3885",
+  "extra": "031-310-3885"
+}, {
+  "sido": "경기",
+  "sigungu": "군포시",
+  "dept": "환경과",
+  "phone": "031-390-0542",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "의왕시",
+  "dept": "환경과",
+  "phone": "031-345-3805",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "하남시",
+  "dept": "환경정책과",
+  "phone": "031-790-5937",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "용인시",
+  "dept": "기후대기과",
+  "phone": "031-6193-3155",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "파주시",
+  "dept": "에너지과",
+  "phone": "031-940-8465",
+  "extra": "파주시청 민원콜센터 031-940-4114"
+}, {
+  "sido": "경기",
+  "sigungu": "이천시",
+  "dept": "환경보호과",
+  "phone": "031-644-2355",
+  "extra": "환경부 통합 콜센터(1661-0970) / 보조금 금액 문의: 무공해차통합누리집 지자체 차종별 보조금"
+}, {
+  "sido": "경기",
+  "sigungu": "안성시",
+  "dept": "안성시 환경과",
+  "phone": "031-678-0743",
+  "extra": "안성시 통합콜센터: 031-678-2114"
+}, {
+  "sido": "경기",
+  "sigungu": "김포시",
+  "dept": "기후에너지과",
+  "phone": "031-980-5364",
+  "extra": "김포시청 기후에너지과 기후정책팀"
+}, {
+  "sido": "경기",
+  "sigungu": "화성시",
+  "dept": "기후환경정책과",
+  "phone": "1577-4200",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "광주시",
+  "dept": "기후탄소과",
+  "phone": "031-760-2982",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "양주시",
+  "dept": "기후에너지과",
+  "phone": "031-8082-6341",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "포천시",
+  "dept": "기후환경과",
+  "phone": "031-538-3241",
+  "extra": "무공해차 통합누리집(www.ev.or.kr) / 포천시 민원콜센터 1533-2200"
+}, {
+  "sido": "경기",
+  "sigungu": "여주시",
+  "dept": "환경과",
+  "phone": "031-887-2983",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "연천군",
+  "dept": "환경보호과",
+  "phone": "031-839-2259",
+  "extra": ""
+}, {
+  "sido": "경기",
+  "sigungu": "가평군",
+  "dept": "환경과",
+  "phone": "031-580-2441",
+  "extra": "가평군 환경과 031-580-2441 / 한국환경공단 032-590-9907 / 전기자동차 통합콜센터 1661-0970"
+}, {
+  "sido": "경기",
+  "sigungu": "양평군",
+  "dept": "기후환경과",
+  "phone": "031-770-2257",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "춘천시",
+  "dept": "기후에너지과",
+  "phone": "033-250-3940",
+  "extra": "춘천시 콜센터: 033-250-3114 / 춘천시 기후에너지과: 033-250-3940"
+}, {
+  "sido": "강원",
+  "sigungu": "원주시",
+  "dept": "에너지과",
+  "phone": "033-737-3048",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "강릉시",
+  "dept": "강릉시 환경과",
+  "phone": "033-640-5393",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "동해시",
+  "dept": "환경과",
+  "phone": "033-530-2376",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "태백시",
+  "dept": "탄소중립과",
+  "phone": "033-550-2650",
+  "extra": "제1차 보급공고 물량: 승용 150대, 화물 30대 / 제2차: 승용 80대, 화물 20대"
+}, {
+  "sido": "강원",
+  "sigungu": "속초시",
+  "dept": "속초시청 친환경과",
+  "phone": "033-639-2519",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "삼척시",
+  "dept": "에너지과",
+  "phone": "033-570-3750",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "홍천군",
+  "dept": "홍천군청 환경과",
+  "phone": "033-430-2621",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "횡성군",
+  "dept": "투자유치과",
+  "phone": "033-340-4773",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "영월군",
+  "dept": "환경위생과",
+  "phone": "033-370-2343",
+  "extra": "5월6일 오전 10시 이후에 하반기 물량 지원 가능합니다"
+}, {
+  "sido": "강원",
+  "sigungu": "평창군",
+  "dept": "환경과",
+  "phone": "033-330-2369",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "정선군",
+  "dept": "전략산업과",
+  "phone": "033-560-2433",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "철원군",
+  "dept": "청정환경과 환경정책팀",
+  "phone": "033-450-4938",
+  "extra": "청정환경과 환경정책팀 전기차 담당자(033-450-4938)"
+}, {
+  "sido": "강원",
+  "sigungu": "화천군",
+  "dept": "환경과",
+  "phone": "033-440-2331",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "양구군",
+  "dept": "경제체육과 사회적경제팀",
+  "phone": "033-480-7141",
+  "extra": "양구군 경제체육과 사회적경제팀 ☎ 033-480-7141"
+}, {
+  "sido": "강원",
+  "sigungu": "인제군",
+  "dept": "환경보호과",
+  "phone": "033-460-4452",
+  "extra": "인제군청 환경보호과 환경관리팀 ☎ 033-460-4452"
+}, {
+  "sido": "강원",
+  "sigungu": "고성군",
+  "dept": "환경과",
+  "phone": "033-680-3339",
+  "extra": ""
+}, {
+  "sido": "강원",
+  "sigungu": "양양군",
+  "dept": "경제에너지과",
+  "phone": "033-670-2831",
+  "extra": "차종 지원액(국비, 도비, 군비) 확인은 공고문 엑셀 파일 참고 바랍니다"
+}, {
+  "sido": "충북",
+  "sigungu": "청주시",
+  "dept": "기후대기과",
+  "phone": "043-201-4982",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "충주시",
+  "dept": "충주시 대기환경과",
+  "phone": "043-850-3681",
+  "extra": "★ 전화 폭주로 공고문 우선 확인 부탁드립니다 ★ / 문자수신 가능합니다"
+}, {
+  "sido": "충북",
+  "sigungu": "제천시",
+  "dept": "제천시 자연환경과",
+  "phone": "043-641-6388",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "보은군",
+  "dept": "보은군청 환경위생과",
+  "phone": "043-540-3253",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "옥천군",
+  "dept": "환경과",
+  "phone": "043-730-3433",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "영동군",
+  "dept": "영동군청 환경과",
+  "phone": "043-740-3405",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "증평군",
+  "dept": "환경위생과",
+  "phone": "043-835-4292",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "진천군",
+  "dept": "진천군 환경과",
+  "phone": "043-539-4114",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "괴산군",
+  "dept": "환경과",
+  "phone": "043-830-3627",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "음성군",
+  "dept": "음성군 환경과",
+  "phone": "043-871-3793",
+  "extra": ""
+}, {
+  "sido": "충북",
+  "sigungu": "단양군",
+  "dept": "환경과",
+  "phone": "043-420-2653",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "천안시",
+  "dept": "기후에너지과",
+  "phone": "041-521-3477",
+  "extra": "천안시 콜센터 1422-36"
+}, {
+  "sido": "충남",
+  "sigungu": "공주시",
+  "dept": "공주시청 환경경보호과",
+  "phone": "041-840-8542",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "보령시",
+  "dept": "보령시청 기후환경과",
+  "phone": "041-930-3667",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "아산시",
+  "dept": "기후변화대책과",
+  "phone": "041-530-6255",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "서산시",
+  "dept": "기후환경대기과",
+  "phone": "041-660-3364",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "논산시",
+  "dept": "환경과",
+  "phone": "041-746-5935",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "계룡시",
+  "dept": "환경위생과",
+  "phone": "042-840-2455",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "당진시",
+  "dept": "환경위생과",
+  "phone": "041-360-6576",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "금산군",
+  "dept": "금산군 환경위생과",
+  "phone": "041-750-2493",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "부여군",
+  "dept": "환경과 환경정책팀",
+  "phone": "041-830-2295",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "서천군",
+  "dept": "환경보호과",
+  "phone": "041-950-4096",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "청양군",
+  "dept": "환경정책과",
+  "phone": "041-940-4052",
+  "extra": "청양군청 환경정책과"
+}, {
+  "sido": "충남",
+  "sigungu": "홍성군",
+  "dept": "홍성군청 환경과",
+  "phone": "041-630-1875",
+  "extra": ""
+}, {
+  "sido": "충남",
+  "sigungu": "예산군",
+  "dept": "예산군 환경과",
+  "phone": "041-339-7538",
+  "extra": "사업 문의: 041-339-7538 / 시스템 문의: 한국환경공단 통합안내데스크(1661-0970)"
+}, {
+  "sido": "충남",
+  "sigungu": "태안군",
+  "dept": "환경산림과",
+  "phone": "041-670-2787",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "전주시",
+  "dept": "전주시청 기후변화대응과",
+  "phone": "063-281-2324",
+  "extra": "063-281-2324 / 063-281-2919 / 063-281-8465"
+}, {
+  "sido": "전북",
+  "sigungu": "군산시",
+  "dept": "기후환경과",
+  "phone": "063-454-4462",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "익산시",
+  "dept": "환경정책과",
+  "phone": "063-859-4452",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "정읍시",
+  "dept": "자원순환과",
+  "phone": "063-539-8163",
+  "extra": "정읍시 자원순환과 기후변화팀"
+}, {
+  "sido": "전북",
+  "sigungu": "남원시",
+  "dept": "환경과",
+  "phone": "063-620-6918",
+  "extra": "환경과: 063-620-6918, 6268, 6916, 6920 / 한국환경공단: 법인 2대 이상 구매 시 ☎1661-0970"
+}, {
+  "sido": "전북",
+  "sigungu": "김제시",
+  "dept": "김제시청 환경과",
+  "phone": "063-540-3559",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "완주군",
+  "dept": "자원순환과",
+  "phone": "063-290-2664",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "진안군",
+  "dept": "진안군청 환경과",
+  "phone": "063-430-2328",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "무주군",
+  "dept": "환경과",
+  "phone": "063-320-2332",
+  "extra": "*승용 마감*"
+}, {
+  "sido": "전북",
+  "sigungu": "장수군",
+  "dept": "환경과",
+  "phone": "063-350-2523",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "임실군",
+  "dept": "환경보호과",
+  "phone": "063-640-2955",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "순창군",
+  "dept": "환경위생과",
+  "phone": "063-650-1724",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "고창군",
+  "dept": "환경위생과",
+  "phone": "063-560-2916",
+  "extra": ""
+}, {
+  "sido": "전북",
+  "sigungu": "부안군",
+  "dept": "부안군청 환경과",
+  "phone": "063-580-4421",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "목포시",
+  "dept": "목포시 기후환경과",
+  "phone": "061-270-8675",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "여수시",
+  "dept": "기후생태과",
+  "phone": "1899-2012",
+  "extra": "여수시 콜센터 1899-2012 / 기후생태과 061-659-3810(승용) 3811(화물)"
+}, {
+  "sido": "전남",
+  "sigungu": "순천시",
+  "dept": "기후에너지과",
+  "phone": "061-749-6528",
+  "extra": "차종별 보조금 지원액: 무공해차 통합누리집-구매 및 지원-지자체 차종별 보조금"
+}, {
+  "sido": "전남",
+  "sigungu": "나주시",
+  "dept": "나주시",
+  "phone": "061-339-8384",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "광양시",
+  "dept": "환경과",
+  "phone": "061-797-2788",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "담양군",
+  "dept": "환경과",
+  "phone": "061-380-3077",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "곡성군",
+  "dept": "환경과",
+  "phone": "061-360-8514",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "구례군",
+  "dept": "환경과",
+  "phone": "061-780-2153",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "고흥군",
+  "dept": "환경정책과",
+  "phone": "061-830-5331",
+  "extra": "전기자동차 보급사업 정책"
+}, {
+  "sido": "전남",
+  "sigungu": "보성군",
+  "dept": "기후환경과",
+  "phone": "061-850-5334",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "화순군",
+  "dept": "화순군청 환경과",
+  "phone": "061-379-3582",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "장흥군",
+  "dept": "환경관리과",
+  "phone": "061-860-6043",
+  "extra": "장흥 전기차 보급사업 및 보조금 상담: 061-860-6043"
+}, {
+  "sido": "전남",
+  "sigungu": "강진군",
+  "dept": "환경과",
+  "phone": "061-430-3222",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "해남군",
+  "dept": "환경과",
+  "phone": "061-530-5338",
+  "extra": "통합콜센터(보조금 신청 시스템 문의처): 한국환경공단(1661-0970)"
+}, {
+  "sido": "전남",
+  "sigungu": "영암군",
+  "dept": "환경기후과",
+  "phone": "061-470-2566",
+  "extra": "기후변화 대응팀"
+}, {
+  "sido": "전남",
+  "sigungu": "무안군",
+  "dept": "환경과",
+  "phone": "061-450-5558",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "함평군",
+  "dept": "환경관리과",
+  "phone": "061-320-1837",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "영광군",
+  "dept": "에너지산업실",
+  "phone": "061-350-4746",
+  "extra": "단순 보조금 문의 및 처리 독촉 전화 자제 / 자격부여, 대상자 선정, 금액확인은 전화 자제 부탁"
+}, {
+  "sido": "전남",
+  "sigungu": "장성군",
+  "dept": "환경과",
+  "phone": "061-390-7364",
+  "extra": ""
+}, {
+  "sido": "전남",
+  "sigungu": "완도군",
+  "dept": "완도군 환경수질관리과",
+  "phone": "061-550-5497",
+  "extra": "상반기 마감"
+}, {
+  "sido": "전남",
+  "sigungu": "진도군",
+  "dept": "환경수질과 환경정책팀",
+  "phone": "061-540-3708",
+  "extra": "통합콜센터(보조금 신청 시스템 문의처): 한국환경공단(1661-0970)"
+}, {
+  "sido": "전남",
+  "sigungu": "신안군",
+  "dept": "세계유산과",
+  "phone": "061-240-8443",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "포항시",
+  "dept": "기후대기과",
+  "phone": "054-270-3791",
+  "extra": "포항시 민원 콜센터 054-270-8282"
+}, {
+  "sido": "경북",
+  "sigungu": "경주시",
+  "dept": "경주시청 환경정책과",
+  "phone": "054-779-6383",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "김천시",
+  "dept": "기후에너지과",
+  "phone": "054-420-6904",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "안동시",
+  "dept": "환경관리과",
+  "phone": "054-840-6193",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "구미시",
+  "dept": "환경정책과",
+  "phone": "054-480-5252",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "영주시",
+  "dept": "환경보호과",
+  "phone": "054-639-6757",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "영천시",
+  "dept": "환경보호과",
+  "phone": "054-330-6036",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "상주시",
+  "dept": "환경관리과",
+  "phone": "054-537-7355",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "문경시",
+  "dept": "환경보호과",
+  "phone": "054-550-6839",
+  "extra": "통합콜센터 1661-0970 / 문경시 환경보호과 054-550-6839"
+}, {
+  "sido": "경북",
+  "sigungu": "경산시",
+  "dept": "환경과",
+  "phone": "053-810-5452",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "의성군",
+  "dept": "환경축산과 탄소중립팀",
+  "phone": "054-830-6027",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "청송군",
+  "dept": "환경관리과",
+  "phone": "054-870-6183",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "영양군",
+  "dept": "환경보전과",
+  "phone": "054-680-6513",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "영덕군",
+  "dept": "환경위생과",
+  "phone": "054-730-6184",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "청도군",
+  "dept": "환경산림과",
+  "phone": "054-370-2185",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "고령군",
+  "dept": "지역경제실",
+  "phone": "054-950-6588",
+  "extra": "한국환경공단 통합콜센터 ☎1661-0970 / 전기자동차 보급절차 등 일반적인 사항 / 법인·개인사업자 2대 이상 구매 시"
+}, {
+  "sido": "경북",
+  "sigungu": "성주군",
+  "dept": "환경과 대기관리팀",
+  "phone": "054-930-6186",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "칠곡군",
+  "dept": "칠곡군 환경관리과",
+  "phone": "054-979-6757",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "예천군",
+  "dept": "예천군 환경관리과",
+  "phone": "054-650-6535",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "봉화군",
+  "dept": "녹색환경과",
+  "phone": "054-679-6406",
+  "extra": ""
+}, {
+  "sido": "경북",
+  "sigungu": "울진군",
+  "dept": "울진군청 환경위생과",
+  "phone": "054-789-6715",
+  "extra": "054-789-6715"
+}, {
+  "sido": "경북",
+  "sigungu": "울릉군",
+  "dept": "환경위생과",
+  "phone": "054-790-6183",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "창원시",
+  "dept": "창원시 기후대기과",
+  "phone": "055-225-3476",
+  "extra": "(대표) 055-225-3471 / (승용) 055-225-3476 / (화물) 055-225-3475 / 통합콜센터(전기자동차 보급): 1661-0970"
+}, {
+  "sido": "경남",
+  "sigungu": "진주시",
+  "dept": "진주시 기후환경과",
+  "phone": "055-749-8643",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "통영시",
+  "dept": "환경과",
+  "phone": "055-650-5472",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "사천시",
+  "dept": "환경보호과",
+  "phone": "055-831-2769",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "김해시",
+  "dept": "기후대응과",
+  "phone": "055-330-8753",
+  "extra": "김해시 기후대응과 친환경자동차팀(055-330-8753)"
+}, {
+  "sido": "경남",
+  "sigungu": "밀양시",
+  "dept": "환경관리과",
+  "phone": "055-359-5317",
+  "extra": "★문의 전 공고문 확인 필수★ / 단순 보조금 확인 문의 자제 바랍니다"
+}, {
+  "sido": "경남",
+  "sigungu": "거제시",
+  "dept": "거제시 기후환경과",
+  "phone": "055-639-3963",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "양산시",
+  "dept": "양산시 기후환경과",
+  "phone": "055-392-2604",
+  "extra": "한국환경공단 통합콜센터 1661-0970 / 개인사업자(전기승용) 2대 이상 구매 시 / 법인(전기승용, 화물) 2대 이상 구매 시"
+}, {
+  "sido": "경남",
+  "sigungu": "의령군",
+  "dept": "환경과",
+  "phone": "055-570-2623",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "함안군",
+  "dept": "환경과",
+  "phone": "055-580-2406",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "창녕군",
+  "dept": "창녕군",
+  "phone": "055-530-7484",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "고성군",
+  "dept": "환경과",
+  "phone": "055-670-5873",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "남해군",
+  "dept": "환경과",
+  "phone": "055-860-3255",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "하동군",
+  "dept": "안전교통과",
+  "phone": "055-880-2394",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "산청군",
+  "dept": "환경위생과",
+  "phone": "055-970-7104",
+  "extra": "전기자동차 보급사업 민원상담 1661-0970"
+}, {
+  "sido": "경남",
+  "sigungu": "함양군",
+  "dept": "환경정책과",
+  "phone": "055-960-6116",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "거창군",
+  "dept": "거창군 환경과",
+  "phone": "055-940-3492",
+  "extra": ""
+}, {
+  "sido": "경남",
+  "sigungu": "합천군",
+  "dept": "환경위생과",
+  "phone": "055-930-3310",
+  "extra": "한국환경공단 통합콜센터(1661-0970) / 합천군 환경위생과 문의"
+}, {
+  "sido": "제주",
+  "sigungu": "제주특별자치도",
+  "dept": "혁신산업국 우주모빌리티과",
+  "phone": "064-710-2612",
+  "extra": "전기차 민간보급 상담 안내 / 제주도청 우주모빌리티과 064)710-2611, 2612, 2613, 2616"
+}, {
+  "sido": "공단",
+  "sigungu": "한국환경공단",
+  "dept": "녹색수송계획부",
+  "phone": "032-590-3684",
+  "extra": "한국환경공단 콜센터 1661-0970 / 법인, 개인사업자 구매 시"
+}];
 
 /* ─── 지역 데이터 ─────────────────────────────────────────── */
 const REGIONS = {
@@ -104,6 +1062,37 @@ const REGIONS = {
   "제주특별자치도": ["제주시", "서귀포시"]
 };
 const shortSido = s => s.replace("특별자치시", "").replace("특별자치도", "").replace("특별시", "").replace("광역시", "").replace(/도$/, "").trim();
+
+/* ─── CSV 파서 ────────────────────────────────────────────── */
+function parseCSV(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const cells = [];
+    let cur = '';
+    let inQ = false;
+    for (const ch of lines[i]) {
+      if (ch === '"') {
+        inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        cells.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    cells.push(cur.trim());
+    if (cells[0]) rows.push({
+      sido: cells[0] || '',
+      sigungu: cells[1] || '',
+      dept: cells[2] || '',
+      phone: cells[3] || '',
+      extra: (cells[4] || '').replace(/^"|"$/g, '')
+    });
+  }
+  return rows;
+}
 
 /* ─── 보조금 조회 API ─────────────────────────────────────── */
 async function fetchSubsidy(region, apiKey) {
@@ -148,47 +1137,6 @@ async function fetchSubsidy(region, apiKey) {
   throw new Error("파싱 실패 — 다시 시도해 주세요");
 }
 
-/* ─── 지자체 연락처 API ────────────────────────────────────── */
-async function fetchContacts(sido, apiKey) {
-  const prompt = `ev.or.kr 지자체 전기차 보조금 담당 연락처 페이지(https://ev.or.kr/nportal/buySupprt/psLocalPhone.do)에서 "${sido}" 지역의 전기차 보조금 담당 연락처를 모두 조회해 주세요.
-가능한 한 모든 시군구를 포함해서, 반드시 순수 JSON 배열만 반환 (마크다운 없이):
-[{"sigungu":"시군구명","agency":"담당기관","dept":"담당부서","phone":"전화번호","fax":"팩스또는null"}]`;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      tools: [{
-        type: "web_search_20250305",
-        name: "web_search"
-      }],
-      messages: [{
-        role: "user",
-        content: prompt
-      }]
-    })
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e?.error?.message || `오류 (${res.status})`);
-  }
-  const d = await res.json();
-  const txt = (d.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  const m = txt.match(/\[[\s\S]*\]/);
-  if (m) {
-    try {
-      return JSON.parse(m[0]);
-    } catch (_) {}
-  }
-  throw new Error("연락처 파싱 실패");
-}
-
 /* ─── 상태 색상 ────────────────────────────────────────────── */
 const STATUS = {
   "접수중": {
@@ -227,13 +1175,13 @@ function Pill({
       borderRadius: 20,
       background: st.bg,
       color: st.c,
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 600
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 6,
-      height: 6,
+      width: 7,
+      height: 7,
       borderRadius: "50%",
       background: st.dot,
       animation: s === "접수중" ? "blink 1.5s infinite" : "none"
@@ -262,11 +1210,11 @@ function KCard({
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
-      marginBottom: 5
+      marginBottom: 6
     }
   }, label), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: 700,
       color: accent || "var(--text)",
       letterSpacing: "-0.5px",
@@ -274,15 +1222,15 @@ function KCard({
     }
   }, val != null ? /*#__PURE__*/React.createElement(React.Fragment, null, typeof val === "number" ? val.toLocaleString() : val, unit && /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 400,
-      marginLeft: 2
+      marginLeft: 3
     }
   }, unit)) : "—"), sub && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--hint)",
-      marginTop: 3
+      marginTop: 4
     }
   }, sub));
 }
@@ -297,9 +1245,9 @@ function ProgBar({
     style: {
       display: "flex",
       justifyContent: "space-between",
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--muted)",
-      marginBottom: 4
+      marginBottom: 5
     }
   }, /*#__PURE__*/React.createElement("span", null, "\uC608\uC0B0 \uC18C\uC9C4\uC728"), /*#__PURE__*/React.createElement("span", {
     style: {
@@ -307,7 +1255,7 @@ function ProgBar({
     }
   }, pct, "% \xB7 \uC794\uC5EC ", (rem || 0).toLocaleString(), "\uB300")), /*#__PURE__*/React.createElement("div", {
     style: {
-      height: 5,
+      height: 6,
       borderRadius: 3,
       background: "var(--border)",
       overflow: "hidden"
@@ -324,19 +1272,19 @@ function ProgBar({
     style: {
       display: "flex",
       justifyContent: "space-between",
-      fontSize: 11,
+      fontSize: 10,
       color: "var(--hint)",
-      marginTop: 3
+      marginTop: 4
     }
   }, /*#__PURE__*/React.createElement("span", null, "0"), /*#__PURE__*/React.createElement("span", null, total.toLocaleString(), "\uB300")));
 }
 function Skel() {
-  return /*#__PURE__*/React.createElement("div", null, [70, 36, 36, 36, 50].map((h, i) => /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", null, [70, 40, 40, 40, 55].map((h, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       height: h,
       borderRadius: 8,
-      marginBottom: 10,
+      marginBottom: 12,
       background: "linear-gradient(90deg,#F0EFEA 25%,#E4E2DA 50%,#F0EFEA 75%)",
       backgroundSize: "200% 100%",
       animation: "shimmer 1.4s infinite"
@@ -357,7 +1305,7 @@ function ApiKeyModal({
     style: {
       position: "fixed",
       inset: 0,
-      background: "rgba(0,0,0,0.65)",
+      background: "rgba(0,0,0,.65)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -368,8 +1316,8 @@ function ApiKeyModal({
       background: "var(--card)",
       borderRadius: 16,
       padding: 28,
-      width: 440,
-      boxShadow: "0 24px 64px rgba(0,0,0,0.3)",
+      width: 460,
+      boxShadow: "0 24px 64px rgba(0,0,0,.3)",
       animation: "fadeIn .2s ease"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -377,7 +1325,7 @@ function ApiKeyModal({
       display: "flex",
       alignItems: "center",
       gap: 10,
-      marginBottom: 6
+      marginBottom: 8
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-key",
@@ -392,19 +1340,19 @@ function ApiKeyModal({
     }
   }, "Anthropic API \uD0A4 \uC124\uC815")), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 15,
+      fontSize: 13,
       color: "var(--muted)",
       marginBottom: 16,
       lineHeight: 1.7
     }
-  }, "\uC774 \uB3C4\uAD6C\uB294 Claude AI\uB85C \uC2E4\uC2DC\uAC04 \uB370\uC774\uD130\uB97C \uAC80\uC0C9\uD569\uB2C8\uB2E4.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("a", {
+  }, "\uC774 \uB3C4\uAD6C\uB294 Claude AI\uB85C \uC2E4\uC2DC\uAC04 \uBCF4\uC870\uAE08 \uB370\uC774\uD130\uB97C \uAC80\uC0C9\uD569\uB2C8\uB2E4.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("a", {
     href: "https://console.anthropic.com/keys",
     target: "_blank",
     rel: "noopener noreferrer"
   }, "console.anthropic.com ", /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 12
+      fontSize: 11
     }
   })), "\uC5D0\uC11C \uD0A4\uB97C \uBC1C\uAE09\uBC1B\uC73C\uC138\uC694."), /*#__PURE__*/React.createElement("input", {
     ref: ref,
@@ -415,24 +1363,24 @@ function ApiKeyModal({
     type: "password",
     style: {
       width: "100%",
-      padding: "10px 12px",
+      padding: "11px 14px",
       border: "1px solid var(--border)",
       borderRadius: 8,
-      fontSize: 16,
+      fontSize: 14,
       outline: "none",
-      marginBottom: 10,
+      marginBottom: 12,
       fontFamily: "monospace"
     }
   }), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 14,
+      fontSize: 12,
       color: "var(--hint)",
-      marginBottom: 18
+      marginBottom: 20
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-lock",
     style: {
-      fontSize: 14,
+      fontSize: 12,
       marginRight: 4
     }
   }), "\uD0A4\uB294 \uBE0C\uB77C\uC6B0\uC800 \uB85C\uCEEC\uC5D0\uB9CC \uC800\uC7A5\uB429\uB2C8\uB2E4."), /*#__PURE__*/React.createElement("div", {
@@ -444,12 +1392,12 @@ function ApiKeyModal({
     onClick: () => onSave(key.trim()),
     disabled: !key.trim(),
     style: {
-      padding: "9px 22px",
+      padding: "10px 24px",
       borderRadius: 8,
       border: "none",
       background: key.trim() ? "#0D0C0A" : "#ccc",
       color: "#fff",
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: 600,
       cursor: key.trim() ? "pointer" : "not-allowed"
     }
@@ -490,7 +1438,7 @@ function SettingsPanel({
     style: {
       position: "fixed",
       inset: 0,
-      background: "rgba(0,0,0,0.3)",
+      background: "rgba(0,0,0,.3)",
       zIndex: 500
     },
     onClick: onClose
@@ -519,7 +1467,7 @@ function SettingsPanel({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: 600,
       color: "#fff"
     }
@@ -535,7 +1483,7 @@ function SettingsPanel({
       background: "none",
       cursor: "pointer",
       color: "#888",
-      fontSize: 24,
+      fontSize: 18,
       lineHeight: 1
     }
   }, /*#__PURE__*/React.createElement("i", {
@@ -552,7 +1500,7 @@ function SettingsPanel({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
@@ -560,7 +1508,7 @@ function SettingsPanel({
     }
   }, "API \uD0A4"), /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: "10px 12px",
       borderRadius: 8,
       background: "var(--bg)",
       border: "1px solid var(--border)",
@@ -570,16 +1518,16 @@ function SettingsPanel({
     style: {
       display: "flex",
       justifyContent: "space-between",
-      marginBottom: 3
+      marginBottom: 4
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 600
     }
   }, "\uD604\uC7AC \uD0A4"), isDefaultKey ? /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       padding: "1px 7px",
       borderRadius: 10,
       background: "var(--green-bg)",
@@ -588,7 +1536,7 @@ function SettingsPanel({
     }
   }, "\uAE30\uBCF8\uAC12") : /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       padding: "1px 7px",
       borderRadius: 10,
       background: "var(--blue-bg)",
@@ -597,7 +1545,7 @@ function SettingsPanel({
     }
   }, "\uC218\uB3D9 \uC785\uB825")), /*#__PURE__*/React.createElement("code", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--muted)",
       wordBreak: "break-all"
     }
@@ -605,12 +1553,12 @@ function SettingsPanel({
     onClick: onChangeKey,
     style: {
       width: "100%",
-      padding: "12px 16px",
+      padding: "10px 12px",
       border: "1px solid var(--border)",
       borderRadius: 8,
       background: "var(--bg)",
       color: "var(--text)",
-      fontSize: 15,
+      fontSize: 13,
       cursor: "pointer",
       textAlign: "left",
       display: "flex",
@@ -621,19 +1569,19 @@ function SettingsPanel({
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-pencil",
     style: {
-      fontSize: 16,
+      fontSize: 14,
       color: "var(--muted)"
     }
   }), "\uB2E4\uB978 API \uD0A4\uB85C \uBCC0\uACBD"), !isDefaultKey && /*#__PURE__*/React.createElement("button", {
     onClick: onResetKey,
     style: {
       width: "100%",
-      padding: "12px 16px",
+      padding: "10px 12px",
       border: "1px solid var(--border)",
       borderRadius: 8,
       background: "var(--bg)",
       color: "var(--amber)",
-      fontSize: 15,
+      fontSize: 13,
       cursor: "pointer",
       textAlign: "left",
       display: "flex",
@@ -643,7 +1591,7 @@ function SettingsPanel({
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-refresh",
     style: {
-      fontSize: 16
+      fontSize: 14
     }
   }), "\uAE30\uBCF8 \uD0A4\uB85C \uCD08\uAE30\uD654")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -651,7 +1599,7 @@ function SettingsPanel({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
@@ -661,12 +1609,12 @@ function SettingsPanel({
     onClick: onClearFavs,
     style: {
       width: "100%",
-      padding: "12px 16px",
+      padding: "10px 12px",
       border: "1px solid var(--border)",
       borderRadius: 8,
       background: "var(--bg)",
       color: "var(--red)",
-      fontSize: 15,
+      fontSize: 13,
       cursor: "pointer",
       textAlign: "left",
       display: "flex",
@@ -676,11 +1624,11 @@ function SettingsPanel({
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-trash",
     style: {
-      fontSize: 16
+      fontSize: 14
     }
   }), "\uC990\uACA8\uCC3E\uAE30 \uC804\uCCB4 \uC0AD\uC81C")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
@@ -695,7 +1643,7 @@ function SettingsPanel({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "8px 10px",
+      padding: "9px 10px",
       borderRadius: 6,
       border: "1px solid var(--border)",
       marginBottom: 6,
@@ -705,63 +1653,39 @@ function SettingsPanel({
     }
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 500
     }
   }, s.label), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--muted)"
     }
   }, s.desc)), /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 15,
+      fontSize: 13,
       color: "var(--hint)"
     }
   }))))), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "12px 16px",
       borderTop: "1px solid var(--border)",
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--hint)"
     }
-  }, "\u26A1 \uC804\uAE30\uCC28 \uBCF4\uC870\uAE08 \uBAA8\uB2C8\uD130 v1.2 \xB7 Powered by Claude AI")));
+  }, "\u26A1 \uC804\uAE30\uCC28 \uBCF4\uC870\uAE08 \uBAA8\uB2C8\uD130 v1.3 \xB7 Powered by Claude AI")));
 }
 
-/* ─── 지자체 연락처 뷰 ────────────────────────────────────── */
+/* ─── 지자체 연락처 뷰 (내장 DB 기반) ─────────────────────── */
 function ContactsView({
-  apiKey
+  contacts
 }) {
+  const SIDO_LIST = useMemo(() => [...new Set(contacts.map(c => c.sido))], [contacts]);
   const [selSido, setSelSido] = useState(null);
-  const [cache, setCache] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState(null);
   const [q, setQ] = useState("");
-  const SIDO_LIST = Object.keys(REGIONS);
-  const contacts = selSido ? cache[selSido] || [] : [];
-  const filtered = q.trim() ? contacts.filter(c => (c.sigungu || "").includes(q) || (c.agency || "").includes(q) || (c.dept || "").includes(q) || (c.phone || "").includes(q)) : contacts;
-  const doLoad = async sido => {
-    if (cache[sido]) return;
-    setLoading(true);
-    setErr(null);
-    try {
-      const d = await fetchContacts(sido, apiKey);
-      setCache(p => ({
-        ...p,
-        [sido]: d
-      }));
-    } catch (e) {
-      setErr(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const pickSido = sido => {
-    setSelSido(sido);
-    setQ("");
-    doLoad(sido);
-  };
+  const rows = useMemo(() => selSido ? contacts.filter(c => c.sido === selSido) : [], [contacts, selSido]);
+  const filtered = useMemo(() => q.trim() ? rows.filter(c => (c.sigungu + c.dept + c.phone + (c.extra || '')).includes(q)) : rows, [rows, q]);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -770,7 +1694,7 @@ function ContactsView({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      width: 155,
+      width: 110,
       background: "#111110",
       color: "#fff",
       overflowY: "auto",
@@ -780,39 +1704,29 @@ function ContactsView({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "10px 10px 8px",
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "#666",
       letterSpacing: "0.3px",
       borderBottom: "1px solid #1E1E1C"
     }
-  }, "\uC2DC\uB3C4 \uC120\uD0DD"), SIDO_LIST.map(sido => {
-    const active = selSido === sido;
-    const cached = !!cache[sido];
-    return /*#__PURE__*/React.createElement("div", {
-      key: sido,
-      onClick: () => pickSido(sido),
-      className: "sbr",
-      style: {
-        padding: "8px 10px",
-        cursor: "pointer",
-        fontSize: 14,
-        color: active ? "#fff" : cached ? "#89BBEE" : "#AAA",
-        background: active ? "rgba(24,95,165,.28)" : "transparent",
-        borderLeft: active ? "2px solid #185FA5" : "2px solid transparent",
-        fontWeight: active ? 600 : 400,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between"
-      }
-    }, /*#__PURE__*/React.createElement("span", null, shortSido(sido)), cached && !active && /*#__PURE__*/React.createElement("i", {
-      className: "ti ti-check",
-      style: {
-        fontSize: 11,
-        color: "#89BBEE"
-      }
-    }));
-  })), /*#__PURE__*/React.createElement("div", {
+  }, "\uC2DC\uB3C4 \uC120\uD0DD"), SIDO_LIST.map(sido => /*#__PURE__*/React.createElement("div", {
+    key: sido,
+    onClick: () => {
+      setSelSido(sido);
+      setQ("");
+    },
+    className: "sbr",
+    style: {
+      padding: "9px 10px",
+      cursor: "pointer",
+      fontSize: 13,
+      color: selSido === sido ? "#fff" : "#AAA",
+      background: selSido === sido ? "rgba(24,95,165,.28)" : "transparent",
+      borderLeft: selSido === sido ? "2px solid #185FA5" : "2px solid transparent",
+      fontWeight: selSido === sido ? 600 : 400
+    }
+  }, sido))), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       display: "flex",
@@ -833,7 +1747,7 @@ function ContactsView({
     style: {
       position: "relative",
       flex: 1,
-      maxWidth: 360
+      maxWidth: 420
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-search",
@@ -842,7 +1756,7 @@ function ContactsView({
       left: 9,
       top: "50%",
       transform: "translateY(-50%)",
-      fontSize: 16,
+      fontSize: 14,
       color: "var(--hint)",
       pointerEvents: "none"
     }
@@ -852,10 +1766,10 @@ function ContactsView({
     placeholder: "\uC2DC\uAD70\uAD6C\xB7\uB2F4\uB2F9\uBD80\uC11C\xB7\uC804\uD654\uBC88\uD638 \uAC80\uC0C9...",
     style: {
       width: "100%",
-      padding: "7px 10px 7px 32px",
+      padding: "8px 10px 8px 34px",
       border: "1px solid var(--border)",
       borderRadius: 8,
-      fontSize: 15,
+      fontSize: 13,
       outline: "none",
       background: "var(--bg)"
     }
@@ -870,15 +1784,16 @@ function ContactsView({
       background: "none",
       cursor: "pointer",
       color: "var(--hint)",
-      fontSize: 17,
+      fontSize: 15,
       lineHeight: 1
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-x"
   }))), selSido && /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 14,
-      color: "var(--muted)"
+      fontSize: 12,
+      color: "var(--muted)",
+      whiteSpace: "nowrap"
     }
   }, filtered.length, "\uAC74"), /*#__PURE__*/React.createElement("a", {
     href: "https://ev.or.kr/nportal/buySupprt/psLocalPhone.do",
@@ -889,12 +1804,12 @@ function ContactsView({
       display: "inline-flex",
       alignItems: "center",
       gap: 4,
-      padding: "5px 11px",
+      padding: "6px 12px",
       borderRadius: 6,
       border: "1px solid var(--border)",
       background: "var(--bg)",
       color: "var(--blue)",
-      fontSize: 14,
+      fontSize: 12,
       textDecoration: "none",
       fontWeight: 500,
       flexShrink: 0
@@ -902,7 +1817,7 @@ function ContactsView({
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 14
+      fontSize: 12
     }
   }), "ev.or.kr \uC6D0\uBCF8")), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -922,19 +1837,19 @@ function ContactsView({
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-phone-call",
     style: {
-      fontSize: 48
+      fontSize: 52
     }
   }), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: 600,
       color: "var(--muted)"
     }
   }, "\uC88C\uCE21\uC5D0\uC11C \uC2DC\uB3C4\uB97C \uC120\uD0DD\uD558\uC138\uC694"), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 15
+      fontSize: 13
     }
-  }, "\uC120\uD0DD \uC2DC ev.or.kr \uB2F4\uB2F9 \uC5F0\uB77D\uCC98\uB97C AI\uB85C \uC2E4\uC2DC\uAC04 \uC870\uD68C\uD569\uB2C8\uB2E4"), /*#__PURE__*/React.createElement("a", {
+  }, "2026\uB144\uB3C4 \uC804\uAE30\uC790\uB3D9\uCC28 \uC9C0\uC790\uCCB4 \uB2F4\uB2F9 \uC5F0\uB77D\uCC98 ", contacts.length, "\uAC1C \uB0B4\uC7A5"), /*#__PURE__*/React.createElement("a", {
     href: "https://ev.or.kr/nportal/buySupprt/psLocalPhone.do",
     target: "_blank",
     rel: "noopener noreferrer",
@@ -943,88 +1858,27 @@ function ContactsView({
       display: "inline-flex",
       alignItems: "center",
       gap: 5,
-      padding: "8px 16px",
+      padding: "9px 18px",
       borderRadius: 8,
       background: "var(--blue)",
       color: "#fff",
       textDecoration: "none",
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: 500
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 15
+      fontSize: 13
     }
-  }), "ev.or.kr \uC804\uCCB4 \uC5F0\uB77D\uCC98 \uBC14\uB85C\uAC00\uAE30")), selSido && loading && /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: 24
-    }
-  }, /*#__PURE__*/React.createElement(Skel, null), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 15,
-      color: "var(--muted)",
-      textAlign: "center",
-      marginTop: 8
-    }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "ti ti-loader",
-    style: {
-      animation: "spin 1s infinite linear",
-      marginRight: 6
-    }
-  }), selSido, " \uC5F0\uB77D\uCC98 \uC870\uD68C \uC911...")), selSido && !loading && err && /*#__PURE__*/React.createElement("div", {
-    style: {
-      margin: 16,
-      background: "var(--red-bg)",
-      border: "1px solid #F5CACA",
-      borderRadius: 8,
-      padding: "14px 16px",
-      color: "var(--red)",
-      fontSize: 15,
-      display: "flex",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "ti ti-alert-circle",
-    style: {
-      fontSize: 18,
-      flexShrink: 0,
-      marginTop: 1
-    }
-  }), /*#__PURE__*/React.createElement("div", null, err, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("a", {
-    href: "https://ev.or.kr/nportal/buySupprt/psLocalPhone.do",
-    target: "_blank",
-    rel: "noopener noreferrer",
-    style: {
-      color: "var(--blue)",
-      fontWeight: 500
-    }
-  }, "ev.or.kr\uC5D0\uC11C \uC9C1\uC811 \uD655\uC778 ", /*#__PURE__*/React.createElement("i", {
-    className: "ti ti-external-link",
-    style: {
-      fontSize: 12
-    }
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => doLoad(selSido),
-    style: {
-      marginLeft: 12,
-      border: "none",
-      background: "none",
-      cursor: "pointer",
-      color: "var(--blue)",
-      fontSize: 14,
-      fontWeight: 500,
-      textDecoration: "underline"
-    }
-  }, "\uB2E4\uC2DC \uC2DC\uB3C4"))), selSido && !loading && !err && filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }), "ev.or.kr \uC804\uCCB4 \uC5F0\uB77D\uCC98 \uBC14\uB85C\uAC00\uAE30")), selSido && filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 40,
       textAlign: "center",
       color: "var(--muted)",
-      fontSize: 16
+      fontSize: 14
     }
-  }, q ? `"${q}" 검색 결과가 없습니다` : `${selSido} 연락처 데이터가 없습니다`), selSido && !loading && !err && filtered.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, q ? `"${q}" 검색 결과가 없습니다` : `${selSido} 연락처 데이터가 없습니다`), selSido && filtered.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       padding: "10px 16px",
       background: "var(--bg)",
@@ -1035,46 +1889,28 @@ function ContactsView({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: 700
     }
-  }, selSido), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setCache(p => {
-        const n = {
-          ...p
-        };
-        delete n[selSido];
-        return n;
-      });
-      doLoad(selSido);
-    },
+  }, selSido), /*#__PURE__*/React.createElement("span", {
     style: {
-      border: "none",
-      background: "none",
-      cursor: "pointer",
-      fontSize: 14,
-      color: "var(--muted)",
-      display: "flex",
-      alignItems: "center",
-      gap: 4
+      fontSize: 12,
+      color: "var(--muted)"
     }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "ti ti-refresh",
-    style: {
-      fontSize: 15
-    }
-  }), "\uC0C8\uB85C\uACE0\uCE68")), /*#__PURE__*/React.createElement("table", {
+  }, "2026\uB144\uB3C4 \uAE30\uC900")), /*#__PURE__*/React.createElement("div", {
+    className: "tbl-scroll"
+  }, /*#__PURE__*/React.createElement("table", {
     style: {
       width: "100%",
-      borderCollapse: "collapse"
+      borderCollapse: "collapse",
+      minWidth: 620
     }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, ["시군구", "담당기관", "담당부서", "전화번호", "팩스"].map((h, i) => /*#__PURE__*/React.createElement("th", {
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, ["지역", "담당부서", "전화번호", "비고"].map((h, i) => /*#__PURE__*/React.createElement("th", {
     key: i,
     style: {
-      padding: "10px 16px",
+      padding: "9px 14px",
       textAlign: "left",
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
@@ -1082,36 +1918,34 @@ function ContactsView({
       position: "sticky",
       top: 0,
       background: "var(--bg)",
-      zIndex: 1
+      zIndex: 1,
+      whiteSpace: "nowrap"
     }
   }, h)))), /*#__PURE__*/React.createElement("tbody", null, filtered.map((c, i) => /*#__PURE__*/React.createElement("tr", {
     key: i,
     className: "row"
   }, /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "10px 16px",
-      fontSize: 15,
+      padding: "9px 14px",
+      fontSize: 14,
       borderBottom: "1px solid #F2F1EC",
-      fontWeight: 500
+      fontWeight: 500,
+      whiteSpace: "nowrap"
     }
-  }, c.sigungu || "—"), /*#__PURE__*/React.createElement("td", {
+  }, c.sigungu), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "10px 16px",
-      fontSize: 15,
+      padding: "9px 14px",
+      fontSize: 13,
       borderBottom: "1px solid #F2F1EC",
-      color: "var(--muted)"
+      color: "var(--muted)",
+      whiteSpace: "nowrap"
     }
-  }, c.agency || "—"), /*#__PURE__*/React.createElement("td", {
+  }, c.dept), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "10px 16px",
-      fontSize: 15,
-      borderBottom: "1px solid #F2F1EC"
-    }
-  }, c.dept || "—"), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: "10px 16px",
-      fontSize: 15,
-      borderBottom: "1px solid #F2F1EC"
+      padding: "9px 14px",
+      fontSize: 13,
+      borderBottom: "1px solid #F2F1EC",
+      whiteSpace: "nowrap"
     }
   }, c.phone ? /*#__PURE__*/React.createElement("a", {
     href: "tel:" + c.phone.replace(/[^0-9]/g, ""),
@@ -1130,31 +1964,657 @@ function ContactsView({
     }
   }), c.phone) : "—"), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "10px 16px",
-      fontSize: 14,
+      padding: "9px 14px",
+      fontSize: 12,
       borderBottom: "1px solid #F2F1EC",
-      color: "var(--muted)"
+      color: "var(--muted)",
+      lineHeight: 1.6,
+      maxWidth: 340
     }
-  }, c.fax || "—")))))))));
+  }, c.extra || "—"))))))))));
+}
+
+/* ─── 관리자 뷰 ───────────────────────────────────────────── */
+function AdminView({
+  contacts,
+  defaultContacts,
+  onUpdate
+}) {
+  const [list, setList] = useState(contacts);
+  const [editIdx, setEditIdx] = useState(null);
+  const [editRow, setEditRow] = useState({
+    sido: '',
+    sigungu: '',
+    dept: '',
+    phone: '',
+    extra: ''
+  });
+  const [addMode, setAddMode] = useState(false);
+  const [newRow, setNewRow] = useState({
+    sido: '',
+    sigungu: '',
+    dept: '',
+    phone: '',
+    extra: ''
+  });
+  const [q, setQ] = useState('');
+  const [sheetsUrl, setSheetsUrl] = useState(() => localStorage.getItem('ev_sheets_url') || '');
+  const [syncMsg, setSyncMsg] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [tab, setTab] = useState('data'); // 'data' | 'sheets'
+
+  const filtered = useMemo(() => q.trim() ? list.filter(c => (c.sido + c.sigungu + c.dept + c.phone + (c.extra || '')).includes(q)) : list, [list, q]);
+  const save = newList => {
+    setList(newList);
+    onUpdate(newList);
+    localStorage.setItem('ev_contacts', JSON.stringify(newList));
+  };
+  const startEdit = idx => {
+    const c = list[idx];
+    setEditIdx(idx);
+    setEditRow({
+      ...c
+    });
+  };
+  const saveEdit = () => {
+    const nl = [...list];
+    nl[editIdx] = {
+      ...editRow
+    };
+    save(nl);
+    setEditIdx(null);
+  };
+  const delRow = idx => {
+    if (!confirm('삭제하시겠습니까?')) return;
+    const nl = list.filter((_, i) => i !== idx);
+    save(nl);
+  };
+  const addRow = () => {
+    if (!newRow.sido || !newRow.sigungu) return;
+    save([...list, {
+      ...newRow
+    }]);
+    setNewRow({
+      sido: '',
+      sigungu: '',
+      dept: '',
+      phone: '',
+      extra: ''
+    });
+    setAddMode(false);
+  };
+  const resetDefault = () => {
+    if (!confirm(`기본 데이터(${defaultContacts.length}건)로 초기화하시겠습니까?`)) return;
+    save([...defaultContacts]);
+  };
+  const exportCSV = () => {
+    const header = '시도,지역구분,담당부서,연락처,연락처기타';
+    const rows = list.map(c => [c.sido, c.sigungu, c.dept, c.phone, `"${(c.extra || '').replace(/"/g, '""')}"`].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], {
+      type: 'text/csv;charset=utf-8'
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ev_contacts_2026.csv';
+    a.click();
+  };
+  const syncSheets = async () => {
+    if (!sheetsUrl.trim()) {
+      setSyncMsg('구글 시트 URL을 먼저 입력하세요');
+      return;
+    }
+    setSyncing(true);
+    setSyncMsg('동기화 중...');
+    try {
+      let url = sheetsUrl.trim();
+      const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+      if (m) {
+        const gid = (url.match(/[?&]gid=(\d+)/) || [])[1] || '0';
+        url = `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
+      }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const csv = await res.text();
+      const rows = parseCSV(csv);
+      if (!rows.length) throw new Error('데이터를 찾을 수 없습니다');
+      save(rows);
+      localStorage.setItem('ev_sheets_url', sheetsUrl);
+      setSyncMsg(`✓ 동기화 완료 — ${rows.length}건 가져옴`);
+    } catch (e) {
+      setSyncMsg('✗ 오류: ' + e.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+  const B = ({
+    icon,
+    label,
+    color,
+    onClick,
+    disabled
+  }) => /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    disabled: disabled,
+    style: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      padding: "7px 13px",
+      borderRadius: 7,
+      border: `1px solid ${color || "var(--border)"}`,
+      background: "var(--card)",
+      color: color || "var(--text)",
+      fontSize: 12,
+      fontWeight: 500,
+      cursor: disabled ? "not-allowed" : "pointer",
+      opacity: disabled ? .6 : 1
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: `ti ${icon}`,
+    style: {
+      fontSize: 13
+    }
+  }), label);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flex: 1,
+      overflow: "hidden",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "10px 16px",
+      borderBottom: "1px solid var(--border)",
+      background: "var(--card)",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 0,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 2
+    }
+  }, [{
+    v: 'data',
+    lbl: '데이터 관리'
+  }, {
+    v: 'sheets',
+    lbl: '구글 시트 연동'
+  }].map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.v,
+    onClick: () => setTab(t.v),
+    style: {
+      padding: "6px 14px",
+      borderRadius: 20,
+      border: "none",
+      background: tab === t.v ? "#1A1A18" : "transparent",
+      color: tab === t.v ? "#fff" : "var(--muted)",
+      fontSize: 12,
+      fontWeight: 500,
+      cursor: "pointer"
+    }
+  }, t.lbl))), tab === 'data' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      flex: 1,
+      maxWidth: 300
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-search",
+    style: {
+      position: "absolute",
+      left: 8,
+      top: "50%",
+      transform: "translateY(-50%)",
+      fontSize: 13,
+      color: "var(--hint)",
+      pointerEvents: "none"
+    }
+  }), /*#__PURE__*/React.createElement("input", {
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: "\uAC80\uC0C9...",
+    style: {
+      width: "100%",
+      padding: "6px 10px 6px 30px",
+      border: "1px solid var(--border)",
+      borderRadius: 7,
+      fontSize: 12,
+      outline: "none",
+      background: "var(--bg)"
+    }
+  })), tab === 'data' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginLeft: "auto",
+      display: "flex",
+      gap: 6,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: "var(--muted)",
+      alignSelf: "center"
+    }
+  }, list.length, "\uAC74"), /*#__PURE__*/React.createElement(B, {
+    icon: "ti-plus",
+    label: "\uCD94\uAC00",
+    color: "var(--green)",
+    onClick: () => {
+      setAddMode(true);
+      setEditIdx(null);
+    }
+  }), /*#__PURE__*/React.createElement(B, {
+    icon: "ti-download",
+    label: "CSV \uB0B4\uBCF4\uB0B4\uAE30",
+    onClick: exportCSV
+  }), /*#__PURE__*/React.createElement(B, {
+    icon: "ti-restore",
+    label: "\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654",
+    color: "var(--red)",
+    onClick: resetDefault
+  }))), tab === 'data' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto"
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "adm-tbl"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, ["시도", "지역구분", "담당부서", "전화번호", "비고", ""].map((h, i) => /*#__PURE__*/React.createElement("th", {
+    key: i
+  }, h)))), /*#__PURE__*/React.createElement("tbody", null, addMode && /*#__PURE__*/React.createElement("tr", {
+    style: {
+      background: "#EEEDFE"
+    }
+  }, ['sido', 'sigungu', 'dept', 'phone', 'extra'].map(k => /*#__PURE__*/React.createElement("td", {
+    key: k
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "adm-inp",
+    value: newRow[k],
+    onChange: e => setNewRow(p => ({
+      ...p,
+      [k]: e.target.value
+    })),
+    placeholder: k
+  }))), /*#__PURE__*/React.createElement("td", {
+    style: {
+      whiteSpace: "nowrap"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: addRow,
+    style: {
+      marginRight: 4,
+      padding: "5px 10px",
+      border: "none",
+      borderRadius: 5,
+      background: "var(--green)",
+      color: "#fff",
+      fontSize: 12,
+      cursor: "pointer"
+    }
+  }, "\uC800\uC7A5"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAddMode(false),
+    style: {
+      padding: "5px 10px",
+      border: "1px solid var(--border)",
+      borderRadius: 5,
+      background: "var(--card)",
+      fontSize: 12,
+      cursor: "pointer"
+    }
+  }, "\uCDE8\uC18C"))), filtered.map((c, i) => {
+    const realIdx = list.indexOf(c);
+    return editIdx === realIdx ? /*#__PURE__*/React.createElement("tr", {
+      key: i,
+      style: {
+        background: "#FEF9E6"
+      }
+    }, ['sido', 'sigungu', 'dept', 'phone', 'extra'].map(k => /*#__PURE__*/React.createElement("td", {
+      key: k
+    }, /*#__PURE__*/React.createElement("input", {
+      className: "adm-inp",
+      value: editRow[k],
+      onChange: e => setEditRow(p => ({
+        ...p,
+        [k]: e.target.value
+      }))
+    }))), /*#__PURE__*/React.createElement("td", {
+      style: {
+        whiteSpace: "nowrap"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: saveEdit,
+      style: {
+        marginRight: 4,
+        padding: "5px 10px",
+        border: "none",
+        borderRadius: 5,
+        background: "var(--blue)",
+        color: "#fff",
+        fontSize: 12,
+        cursor: "pointer"
+      }
+    }, "\uC800\uC7A5"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setEditIdx(null),
+      style: {
+        padding: "5px 10px",
+        border: "1px solid var(--border)",
+        borderRadius: 5,
+        background: "var(--card)",
+        fontSize: 12,
+        cursor: "pointer"
+      }
+    }, "\uCDE8\uC18C"))) : /*#__PURE__*/React.createElement("tr", {
+      key: i,
+      className: "row"
+    }, /*#__PURE__*/React.createElement("td", {
+      style: {
+        whiteSpace: "nowrap",
+        fontSize: 13
+      }
+    }, c.sido), /*#__PURE__*/React.createElement("td", {
+      style: {
+        whiteSpace: "nowrap",
+        fontSize: 13,
+        fontWeight: 500
+      }
+    }, c.sigungu), /*#__PURE__*/React.createElement("td", {
+      style: {
+        fontSize: 13,
+        color: "var(--muted)"
+      }
+    }, c.dept), /*#__PURE__*/React.createElement("td", {
+      style: {
+        whiteSpace: "nowrap",
+        fontSize: 13
+      }
+    }, c.phone ? /*#__PURE__*/React.createElement("a", {
+      href: "tel:" + c.phone.replace(/[^0-9]/g, ""),
+      style: {
+        color: "var(--blue)",
+        textDecoration: "none"
+      }
+    }, c.phone) : "—"), /*#__PURE__*/React.createElement("td", {
+      style: {
+        fontSize: 12,
+        color: "var(--muted)",
+        maxWidth: 250,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      },
+      title: c.extra
+    }, c.extra || "—"), /*#__PURE__*/React.createElement("td", {
+      style: {
+        whiteSpace: "nowrap"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => startEdit(realIdx),
+      style: {
+        marginRight: 4,
+        padding: "4px 9px",
+        border: "1px solid var(--border)",
+        borderRadius: 5,
+        background: "var(--card)",
+        fontSize: 11,
+        cursor: "pointer"
+      }
+    }, /*#__PURE__*/React.createElement("i", {
+      className: "ti ti-pencil",
+      style: {
+        fontSize: 11
+      }
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => delRow(realIdx),
+      style: {
+        padding: "4px 9px",
+        border: "1px solid #F5CACA",
+        borderRadius: 5,
+        background: "var(--red-bg)",
+        color: "var(--red)",
+        fontSize: 11,
+        cursor: "pointer"
+      }
+    }, /*#__PURE__*/React.createElement("i", {
+      className: "ti ti-trash",
+      style: {
+        fontSize: 11
+      }
+    }))));
+  })))), tab === 'sheets' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 620
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      marginBottom: 6
+    }
+  }, "\uAD6C\uAE00 \uC2DC\uD2B8 \uC5F0\uB3D9"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: "var(--muted)",
+      marginBottom: 20,
+      lineHeight: 1.7
+    }
+  }, "\uAD6C\uAE00 \uC2DC\uD2B8\uB97C \uACF5\uAC1C \uACF5\uC720\uD558\uACE0 URL\uC744 \uC785\uB825\uD558\uBA74, \uC2DC\uD2B8 \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC640 \uC5F0\uB77D\uCC98 DB\uB97C \uC5C5\uB370\uC774\uD2B8\uD569\uB2C8\uB2E4.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("strong", null, "\uC2DC\uD2B8 \uCEEC\uB7FC \uC21C\uC11C:"), " \uC2DC\uB3C4 / \uC9C0\uC5ED\uAD6C\uBD84 / \uB2F4\uB2F9\uBD80\uC11C / \uC5F0\uB77D\uCC98 / \uC5F0\uB77D\uCC98\uAE30\uD0C0 (1\uD589: \uD5E4\uB354)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--card)",
+      borderRadius: "var(--radius)",
+      border: "1px solid var(--border)",
+      padding: 20,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "\uAD6C\uAE00 \uC2DC\uD2B8 URL"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: sheetsUrl,
+    onChange: e => setSheetsUrl(e.target.value),
+    placeholder: "https://docs.google.com/spreadsheets/d/...",
+    style: {
+      flex: 1,
+      padding: "9px 12px",
+      border: "1px solid var(--border)",
+      borderRadius: 7,
+      fontSize: 13,
+      outline: "none"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: syncSheets,
+    disabled: syncing,
+    style: {
+      padding: "9px 18px",
+      borderRadius: 7,
+      border: "none",
+      background: "var(--blue)",
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: 600,
+      cursor: syncing ? "not-allowed" : "pointer",
+      whiteSpace: "nowrap",
+      display: "flex",
+      alignItems: "center",
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-refresh",
+    style: {
+      fontSize: 13,
+      animation: syncing ? "spin 1s infinite linear" : "none"
+    }
+  }), syncing ? "동기화 중" : "시트에서 가져오기")), syncMsg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      padding: "8px 12px",
+      borderRadius: 6,
+      background: syncMsg.startsWith('✓') ? "var(--green-bg)" : syncMsg.startsWith('✗') ? "var(--red-bg)" : "var(--amber-bg)",
+      color: syncMsg.startsWith('✓') ? "var(--green)" : syncMsg.startsWith('✗') ? "var(--red)" : "var(--amber)",
+      fontSize: 12
+    }
+  }, syncMsg)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "var(--blue-bg)",
+      border: "1px solid #C7D8F8",
+      borderRadius: "var(--radius)",
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: "var(--blue)",
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-info-circle",
+    style: {
+      marginRight: 6
+    }
+  }), "\uAD6C\uAE00 \uC2DC\uD2B8 \uC5F0\uB3D9 \uBC29\uBC95"), [["1단계", "구글 시트 생성", "새 스프레드시트를 만들고 1행에 헤더(시도/지역구분/담당부서/연락처/연락처기타)를 입력합니다"], ["2단계", "CSV 내보내기 활용", "'데이터 관리' 탭에서 'CSV 내보내기'를 클릭하면 현재 DB를 파일로 받을 수 있습니다. 이를 구글 시트에 붙여넣기 하세요"], ["3단계", "공개 공유 설정", "구글 시트 → 공유 → '링크가 있는 모든 사용자'에게 '뷰어' 권한 부여"], ["4단계", "URL 입력", "공유 URL을 위 입력란에 붙여넣고 '시트에서 가져오기' 클릭"], ["이후 관리", "시트에서 직접 편집", "구글 시트에서 데이터를 수정한 후, 이 페이지에서 '시트에서 가져오기'를 다시 클릭하면 반영됩니다"]].map(([step, title, desc], i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      gap: 12,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 48,
+      height: 24,
+      borderRadius: 5,
+      background: "var(--blue)",
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: 700,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0
+    }
+  }, step), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: "var(--blue)",
+      marginBottom: 2
+    }
+  }, title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "#1A4E8A",
+      lineHeight: 1.6
+    }
+  }, desc)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16,
+      padding: "10px 14px",
+      background: "rgba(24,95,165,.1)",
+      borderRadius: 7,
+      fontSize: 12,
+      color: "var(--blue)"
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "CSV \uB0B4\uBCF4\uB0B4\uAE30 \u2192"), " \uAD6C\uAE00 \uC2DC\uD2B8\uC5D0 \uBD99\uC5EC\uB123\uAE30 \u2192 \uACF5\uAC1C \uACF5\uC720 \u2192 URL \uC785\uB825 \u2192 \uB3D9\uAE30\uD654", /*#__PURE__*/React.createElement("br", null), "\uC774\uD6C4\uC5D0\uB294 \uC2DC\uD2B8\uB9CC \uC218\uC815\uD558\uBA74 \uC5B8\uC81C\uB4E0 \uCD5C\uC2E0 \uB370\uC774\uD130\uB85C \uC5C5\uB370\uC774\uD2B8\uB429\uB2C8\uB2E4.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16,
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: exportCSV,
+    style: {
+      padding: "9px 16px",
+      borderRadius: 7,
+      border: "1px solid var(--border)",
+      background: "var(--card)",
+      fontSize: 13,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-download",
+    style: {
+      fontSize: 13
+    }
+  }), "\uD604\uC7AC DB CSV \uB0B4\uBCF4\uB0B4\uAE30"), /*#__PURE__*/React.createElement("a", {
+    href: "https://docs.google.com/spreadsheets/create",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      padding: "9px 16px",
+      borderRadius: 7,
+      border: "1px solid var(--border)",
+      background: "var(--card)",
+      fontSize: 13,
+      textDecoration: "none",
+      color: "var(--text)",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-table-plus",
+    style: {
+      fontSize: 13
+    }
+  }), "\uC0C8 \uAD6C\uAE00 \uC2DC\uD2B8 \uB9CC\uB4E4\uAE30")))));
 }
 
 /* ─── 메인 앱 ─────────────────────────────────────────────── */
 function App() {
   const [view, setView] = useState("subsidy");
-  const [mobSide, setMobSide] = useState(false);
   const [apiKey, setApiKey] = useState(() => DEFAULT_API_KEY || localStorage.getItem("ev_apikey") || "");
   const [showKey, setShowKey] = useState(() => !DEFAULT_API_KEY && !localStorage.getItem("ev_apikey"));
   const [showSets, setShowSets] = useState(false);
+  const [mobSide, setMobSide] = useState(false);
+  const [contacts, setContacts] = useState(() => {
+    try {
+      const s = localStorage.getItem('ev_contacts');
+      if (s) return JSON.parse(s);
+    } catch {}
+    return DEFAULT_CONTACTS;
+  });
   const [selSido, setSelSido] = useState(null);
   const [selSg, setSelSg] = useState(null);
-  const [exp, setExp] = useState({"경기도": true});
+  const [exp, setExp] = useState({
+    "경기도": true
+  });
   const [vt, setVt] = useState("passenger");
   const [favs, setFavs] = useState(() => {
     try {
       const s = localStorage.getItem("ev_favs");
       if (s) return JSON.parse(s);
     } catch {}
-    return [{sido:"경기도",sg:"고양시"},{sido:"경기도",sg:"파주시"}];
+    return [{
+      sido: "경기도",
+      sg: "고양시"
+    }, {
+      sido: "경기도",
+      sg: "파주시"
+    }];
   });
   const [sbQ, setSbQ] = useState("");
   const [gQ, setGQ] = useState("");
@@ -1206,6 +2666,7 @@ function App() {
     setGQ("");
     setGR([]);
     setShowSets(false);
+    setMobSide(false);
   };
   const onGQ = q => {
     setGQ(q);
@@ -1247,6 +2708,7 @@ function App() {
     } finally {
       setLoading(false);
     }
+    ;
   }, [full, apiKey]);
   useEffect(() => {
     if (full && apiKey) doLoad();
@@ -1272,6 +2734,19 @@ function App() {
     icon: "ti-building-factory-2",
     lbl: "공단 지원"
   }];
+  const TABS = [{
+    v: "subsidy",
+    icon: "ti-map-2",
+    lbl: "보조금 조회"
+  }, {
+    v: "contacts",
+    icon: "ti-phone",
+    lbl: "지자체 연락처"
+  }, {
+    v: "admin",
+    icon: "ti-database",
+    lbl: "관리자"
+  }];
   return /*#__PURE__*/React.createElement(React.Fragment, null, showKey && /*#__PURE__*/React.createElement(ApiKeyModal, {
     onSave: saveKey
   }), showSets && /*#__PURE__*/React.createElement(SettingsPanel, {
@@ -1289,7 +2764,7 @@ function App() {
       background: "#0D0C0A",
       color: "#fff",
       padding: "0 14px",
-      height: 48,
+      height: 52,
       display: "flex",
       alignItems: "center",
       gap: 10,
@@ -1298,21 +2773,34 @@ function App() {
       position: "relative",
       zIndex: 60
     }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "ti ti-bolt",
-    style: {
-      fontSize: 24,
-      color: "#FBBF24"
-    }
-  }),
-  /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     className: "mob-only",
     onClick: () => setMobSide(m => !m),
-    style: {border:"none",background:"rgba(255,255,255,.1)",borderRadius:6,padding:"6px 9px",cursor:"pointer",color:"#ccc",lineHeight:1,marginRight:4}
-  }, /*#__PURE__*/React.createElement("i", {className:"ti ti-menu-2",style:{fontSize:22}})), /*#__PURE__*/React.createElement("span", {
+    style: {
+      border: "none",
+      background: "rgba(255,255,255,.1)",
+      borderRadius: 6,
+      padding: "6px 9px",
+      cursor: "pointer",
+      color: "#ccc",
+      lineHeight: 1,
+      marginRight: 2
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-menu-2",
+    style: {
+      fontSize: 20
+    }
+  })), /*#__PURE__*/React.createElement("i", {
+    className: "ti ti-bolt",
+    style: {
+      fontSize: 20,
+      color: "#FBBF24"
+    }
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontWeight: 700,
-      fontSize: 17,
+      fontSize: 15,
       letterSpacing: "-0.3px",
       whiteSpace: "nowrap"
     }
@@ -1323,24 +2811,16 @@ function App() {
       marginLeft: 8,
       flexShrink: 0
     }
-  }, [{
-    v: "subsidy",
-    icon: "ti-map-2",
-    lbl: "보조금 조회"
-  }, {
-    v: "contacts",
-    icon: "ti-phone",
-    lbl: "지자체 연락처"
-  }].map(t => /*#__PURE__*/React.createElement("button", {
+  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
     key: t.v,
     onClick: () => setView(t.v),
     style: {
-      padding: "4px 12px",
+      padding: "5px 12px",
       borderRadius: 20,
       border: "none",
       background: view === t.v ? "rgba(255,255,255,.18)" : "transparent",
       color: view === t.v ? "#fff" : "#888",
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: view === t.v ? 600 : 400,
       cursor: "pointer",
       display: "flex",
@@ -1351,9 +2831,10 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: `ti ${t.icon}`,
     style: {
-      fontSize: 14
+      fontSize: 12
     }
   }), t.lbl))), view === "subsidy" && /*#__PURE__*/React.createElement("div", {
+    className: "desk-search",
     style: {
       position: "relative",
       flex: 1,
@@ -1366,7 +2847,7 @@ function App() {
       left: 9,
       top: "50%",
       transform: "translateY(-50%)",
-      fontSize: 16,
+      fontSize: 14,
       color: "#777",
       pointerEvents: "none"
     }
@@ -1377,12 +2858,12 @@ function App() {
     placeholder: "\uC2DC\uB3C4\xB7\uC2DC\uAD70\uAD6C \uAC80\uC0C9... (\uC608: \uAC15\uB0A8\uAD6C, \uC218\uC6D0)",
     style: {
       width: "100%",
-      padding: "7px 10px 7px 32px",
+      padding: "7px 10px 7px 34px",
       background: "rgba(255,255,255,.1)",
       border: "1px solid rgba(255,255,255,.15)",
       borderRadius: 8,
       color: "#fff",
-      fontSize: 15,
+      fontSize: 13,
       outline: "none"
     }
   }), gR.length > 0 && /*#__PURE__*/React.createElement("div", {
@@ -1403,8 +2884,8 @@ function App() {
     key: i,
     onMouseDown: () => pick(r.sido, r.sg),
     style: {
-      padding: "11px 15px",
-      fontSize: 15,
+      padding: "10px 14px",
+      fontSize: 13,
       cursor: "pointer",
       color: "var(--text)",
       borderBottom: i < gR.length - 1 ? "1px solid #F2F1EC" : "none",
@@ -1415,8 +2896,8 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-map-pin",
     style: {
-      fontSize: 14,
-      marginRight: 5,
+      fontSize: 12,
+      marginRight: 6,
       color: "var(--hint)"
     }
   }), r.label)))), /*#__PURE__*/React.createElement("div", {
@@ -1429,7 +2910,7 @@ function App() {
     }
   }, ft && view === "subsidy" && /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "#666"
     }
   }, "\uC870\uD68C ", ft), /*#__PURE__*/React.createElement("a", {
@@ -1444,13 +2925,13 @@ function App() {
       borderRadius: 6,
       background: "rgba(255,255,255,.08)",
       color: "#ccc",
-      fontSize: 14,
+      fontSize: 12,
       textDecoration: "none"
     }
   }, "ev.or.kr ", /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 12
+      fontSize: 10
     }
   })), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowSets(true),
@@ -1466,7 +2947,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-settings",
     style: {
-      fontSize: 18
+      fontSize: 16
     }
   })))), view === "subsidy" && favs.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1482,7 +2963,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-star-filled",
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "#FBBF24",
       flexShrink: 0,
       marginRight: 2
@@ -1492,30 +2973,44 @@ function App() {
     onClick: () => pick(f.sido, f.sg),
     className: "chip",
     style: {
-      padding: "3px 11px",
+      padding: "3px 12px",
       borderRadius: 20,
       border: "none",
       background: f.sido === selSido && f.sg === selSg ? "#185FA5" : "rgba(255,255,255,.09)",
       color: f.sido === selSido && f.sg === selSg ? "#fff" : "#aaa",
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 500,
       cursor: "pointer",
       whiteSpace: "nowrap",
       flexShrink: 0,
       transition: "all .15s"
     }
-  }, favLabel(f)))), /*#__PURE__*/React.createElement("div", {className: mobSide ? "sidebar-overlay open" : "sidebar-overlay", style:{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:299,top:52,display:mobSide?"block":"none"}, onClick:()=>setMobSide(false)}),
-    view === "contacts" ? /*#__PURE__*/React.createElement(ContactsView, {
-    apiKey: apiKey
-  }) : /*#__PURE__*/React.createElement("div", {
+  }, favLabel(f)))), view === "contacts" && /*#__PURE__*/React.createElement(ContactsView, {
+    contacts: contacts
+  }), view === "admin" && /*#__PURE__*/React.createElement(AdminView, {
+    contacts: contacts,
+    defaultContacts: DEFAULT_CONTACTS,
+    onUpdate: setContacts
+  }), view === "subsidy" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.45)",
+      zIndex: 299,
+      top: 52,
+      display: mobSide ? "block" : "none"
+    },
+    onClick: () => setMobSide(false)
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flex: 1,
       overflow: "hidden"
     }
   }, /*#__PURE__*/React.createElement("div", {
+    className: "sidebar-wrap" + (mobSide ? " open" : ""),
     style: {
-      width: 210,
+      width: 200,
       background: "#111110",
       color: "#fff",
       display: "flex",
@@ -1534,12 +3029,12 @@ function App() {
     placeholder: "\uC9C0\uC5ED \uD544\uD130...",
     style: {
       width: "100%",
-      padding: "5px 9px",
+      padding: "6px 10px",
       background: "rgba(255,255,255,.07)",
       border: "1px solid rgba(255,255,255,.1)",
       borderRadius: 6,
       color: "#fff",
-      fontSize: 14,
+      fontSize: 12,
       outline: "none"
     }
   })), /*#__PURE__*/React.createElement("div", {
@@ -1563,7 +3058,7 @@ function App() {
         pick(sido, null);
       },
       style: {
-        padding: "8px 10px",
+        padding: "9px 10px",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -1573,14 +3068,14 @@ function App() {
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: isSel ? 600 : 400,
         color: isSel ? "#fff" : "#AAA"
       }
     }, shortSido(sido)), /*#__PURE__*/React.createElement("i", {
       className: `ti ti-chevron-${isExp ? "up" : "down"}`,
       style: {
-        fontSize: 11,
+        fontSize: 10,
         color: "#555"
       }
     })), (isExp || sbQ) && sgs.map(sg => {
@@ -1590,9 +3085,9 @@ function App() {
         className: "sbr",
         onClick: () => pick(sido, sg),
         style: {
-          padding: "6px 10px 6px 20px",
+          padding: "7px 10px 7px 22px",
           cursor: "pointer",
-          fontSize: 14,
+          fontSize: 12,
           color: isSl ? "#fff" : "#777",
           background: isSl ? "rgba(24,95,165,.28)" : "transparent",
           borderLeft: isSl ? "2px solid #185FA5" : "2px solid transparent",
@@ -1604,7 +3099,7 @@ function App() {
     style: {
       flex: 1,
       overflowY: "auto",
-      padding: "16px 20px"
+      padding: "18px 22px"
     }
   }, !selSido ? /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1619,17 +3114,17 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-map-2",
     style: {
-      fontSize: 52
+      fontSize: 56
     }
   }), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: 600,
       color: "var(--muted)"
     }
   }, "\uC88C\uCE21\uC5D0\uC11C \uC9C0\uC5ED\uC744 \uC120\uD0DD\uD558\uC138\uC694"), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 15
+      fontSize: 13
     }
   }, "\uC2DC\uB3C4 \u2192 \uC2DC\uAD70\uAD6C \uC120\uD0DD \uC2DC AI\uAC00 \uCD5C\uC2E0 \uBCF4\uC870\uAE08 \uC815\uBCF4\uB97C \uC870\uD68C\uD569\uB2C8\uB2E4"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1665,13 +3160,13 @@ function App() {
       display: "inline-flex",
       alignItems: "center",
       gap: 6,
-      padding: "10px 16px",
+      padding: "9px 16px",
       borderRadius: 8,
       background: "var(--card)",
       border: "1px solid var(--border)",
       color: "var(--text)",
       textDecoration: "none",
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: 500
     },
     onMouseEnter: e => {
@@ -1685,12 +3180,12 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: `ti ${s.icon}`,
     style: {
-      fontSize: 16
+      fontSize: 14
     }
   }), s.label, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--hint)"
     }
   }))))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -1698,7 +3193,7 @@ function App() {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 14
+      marginBottom: 16
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1708,7 +3203,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("h1", {
     style: {
-      fontSize: 21,
+      fontSize: 20,
       fontWeight: 700,
       letterSpacing: "-0.4px"
     }
@@ -1719,7 +3214,7 @@ function App() {
       border: "none",
       background: "none",
       cursor: "pointer",
-      fontSize: 21,
+      fontSize: 19,
       color: isFav ? "#FBBF24" : "var(--border)",
       padding: 3,
       transition: "color .15s",
@@ -1737,12 +3232,12 @@ function App() {
     key: t,
     onClick: () => setVt(t),
     style: {
-      padding: "5px 14px",
+      padding: "6px 16px",
       borderRadius: 20,
       border: `1px solid ${vt === t ? "#1A1A18" : "var(--border)"}`,
       background: vt === t ? "#1A1A18" : "var(--card)",
       color: vt === t ? "#fff" : "var(--muted)",
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 500,
       cursor: "pointer",
       transition: "all .15s",
@@ -1753,18 +3248,18 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: `ti ti-${t === "passenger" ? "car" : "truck"}`,
     style: {
-      fontSize: 15
+      fontSize: 13
     }
   }), t === "passenger" ? "승용" : "화물")), /*#__PURE__*/React.createElement("button", {
     onClick: doLoad,
     disabled: loading,
     style: {
-      padding: "5px 12px",
+      padding: "6px 14px",
       borderRadius: 20,
       border: "1px solid var(--border)",
       background: "var(--card)",
       color: "var(--muted)",
-      fontSize: 14,
+      fontSize: 12,
       cursor: loading ? "not-allowed" : "pointer",
       display: "flex",
       alignItems: "center",
@@ -1773,7 +3268,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-refresh",
     style: {
-      fontSize: 15,
+      fontSize: 13,
       animation: loading ? "spin 1s infinite linear" : "none"
     }
   }), loading ? "조회중" : "새로고침"))), loading && /*#__PURE__*/React.createElement(Skel, null), err && !loading && /*#__PURE__*/React.createElement("div", {
@@ -1781,17 +3276,17 @@ function App() {
       background: "var(--red-bg)",
       border: "1px solid #F5CACA",
       borderRadius: 8,
-      padding: "14px 16px",
+      padding: "13px 16px",
       color: "var(--red)",
-      fontSize: 15,
-      marginBottom: 14,
+      fontSize: 13,
+      marginBottom: 16,
       display: "flex",
       gap: 8
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-alert-circle",
     style: {
-      fontSize: 18,
+      fontSize: 16,
       flexShrink: 0,
       marginTop: 1
     }
@@ -1806,13 +3301,14 @@ function App() {
   }, "ev.or.kr\uC5D0\uC11C \uC9C1\uC811 \uD655\uC778 ", /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 12
+      fontSize: 11
     }
   })))), !loading && dat && vd && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "cards-row",
     style: {
       display: "flex",
       gap: 10,
-      marginBottom: 12
+      marginBottom: 14
     }
   }, /*#__PURE__*/React.createElement(KCard, {
     label: "\uCD1D \uBCF4\uC870\uAE08",
@@ -1841,15 +3337,15 @@ function App() {
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
-      marginBottom: 7
+      marginBottom: 8
     }
   }, "\uC2E0\uCCAD \uD604\uD669"), /*#__PURE__*/React.createElement(Pill, {
     s: vd.status
   }), vd.queue > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
+      fontSize: 11,
       color: STATUS["대기"].c,
-      marginTop: 6
+      marginTop: 7
     }
   }, "\uB300\uAE30 ", vd.queue, "\uBC88")), /*#__PURE__*/React.createElement(KCard, {
     label: "\uC2E0\uCCAD \uAE30\uAC04",
@@ -1859,9 +3355,9 @@ function App() {
     style: {
       background: "var(--card)",
       borderRadius: "var(--radius)",
-      padding: "14px 16px",
+      padding: "13px 16px",
       border: "1px solid var(--border)",
-      marginBottom: 12
+      marginBottom: 14
     }
   }, /*#__PURE__*/React.createElement(ProgBar, {
     total: vd.quota,
@@ -1871,14 +3367,14 @@ function App() {
       background: "var(--card)",
       borderRadius: "var(--radius)",
       border: "1px solid var(--border)",
-      marginBottom: 12,
+      marginBottom: 14,
       overflow: "hidden"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: "11px 16px",
       borderBottom: "1px solid var(--border)",
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 600
     }
   }, "\uBCF4\uC870\uAE08 \uAD6C\uC131"), /*#__PURE__*/React.createElement("table", {
@@ -1889,9 +3385,9 @@ function App() {
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, ["항목", "금액 (만원)", "비율"].map((h, i) => /*#__PURE__*/React.createElement("th", {
     key: i,
     style: {
-      padding: "9px 16px",
+      padding: "8px 16px",
       textAlign: i === 0 ? "left" : "right",
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: 600,
       color: "var(--muted)",
       letterSpacing: "0.3px",
@@ -1911,31 +3407,31 @@ function App() {
       className: "row"
     }, /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "10px 16px",
-        fontSize: 15,
+        padding: "9px 16px",
+        fontSize: 13,
         borderBottom: "1px solid #F2F1EC"
       }
     }, /*#__PURE__*/React.createElement("i", {
       className: `ti ${icon}`,
       style: {
-        fontSize: 15,
-        marginRight: 6,
+        fontSize: 13,
+        marginRight: 7,
         color: "var(--hint)"
       }
     }), lbl), /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "10px 16px",
+        padding: "9px 16px",
         textAlign: "right",
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 600,
         color: "var(--blue)",
         borderBottom: "1px solid #F2F1EC"
       }
     }, v.toLocaleString()), /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "10px 16px",
+        padding: "9px 16px",
         textAlign: "right",
-        fontSize: 14,
+        fontSize: 12,
         color: "var(--muted)",
         borderBottom: "1px solid #F2F1EC"
       }
@@ -1946,22 +3442,22 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "12px 16px",
-      fontSize: 15,
+      padding: "10px 16px",
+      fontSize: 13,
       fontWeight: 700
     }
   }, "\uD569\uACC4"), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "12px 16px",
+      padding: "10px 16px",
       textAlign: "right",
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: 700
     }
   }, vd.total != null ? vd.total.toLocaleString() : "—"), /*#__PURE__*/React.createElement("td", {
     style: {
-      padding: "12px 16px",
+      padding: "10px 16px",
       textAlign: "right",
-      fontSize: 14,
+      fontSize: 12,
       color: "var(--muted)"
     }
   }, "100%"))))), vd.note && /*#__PURE__*/React.createElement("div", {
@@ -1969,10 +3465,10 @@ function App() {
       background: "var(--blue-bg)",
       border: "1px solid #C7D8F8",
       borderRadius: 8,
-      padding: "12px 16px",
-      fontSize: 14,
+      padding: "11px 16px",
+      fontSize: 12,
       color: "var(--blue)",
-      marginBottom: 10
+      marginBottom: 12
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-info-circle",
@@ -1984,10 +3480,10 @@ function App() {
       background: "var(--amber-bg)",
       border: "1px solid #E8D5A0",
       borderRadius: 8,
-      padding: "12px 16px",
-      fontSize: 14,
+      padding: "11px 16px",
+      fontSize: 12,
       color: "var(--amber)",
-      marginBottom: 10
+      marginBottom: 12
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-speakerphone",
@@ -1999,14 +3495,14 @@ function App() {
       background: "var(--card)",
       borderRadius: "var(--radius)",
       border: "1px solid var(--border)",
-      marginBottom: 12,
+      marginBottom: 14,
       overflow: "hidden"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: "12px 16px",
+      padding: "11px 16px",
       borderBottom: "1px solid var(--border)",
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 600
     }
   }, /*#__PURE__*/React.createElement("i", {
@@ -2018,20 +3514,20 @@ function App() {
     style: {
       padding: 12,
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fill,minmax(185px,1fr))",
-      gap: 8
+      gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
+      gap: 10
     }
   }, dat.contacts.map((c, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
-      padding: "10px 12px",
+      padding: "11px 13px",
       borderRadius: 8,
       background: "var(--bg)",
       border: "1px solid var(--border)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 600,
       marginBottom: 6
     }
@@ -2041,7 +3537,7 @@ function App() {
       display: "flex",
       alignItems: "center",
       gap: 4,
-      fontSize: 15,
+      fontSize: 13,
       color: "var(--blue)",
       fontWeight: 500,
       textDecoration: "none",
@@ -2050,7 +3546,7 @@ function App() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-phone",
     style: {
-      fontSize: 14
+      fontSize: 12
     }
   }), c.phone), c.email && /*#__PURE__*/React.createElement("a", {
     href: `mailto:${c.email}`,
@@ -2058,14 +3554,14 @@ function App() {
       display: "flex",
       alignItems: "center",
       gap: 4,
-      fontSize: 12,
+      fontSize: 11,
       color: "var(--muted)",
       textDecoration: "none"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "ti ti-mail",
     style: {
-      fontSize: 12
+      fontSize: 11
     }
   }), c.email))))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2073,10 +3569,10 @@ function App() {
       flexWrap: "wrap",
       gap: 8,
       alignItems: "center",
-      fontSize: 14,
+      fontSize: 12,
       color: "var(--hint)",
       paddingTop: 4,
-      paddingBottom: 8
+      paddingBottom: 10
     }
   }, /*#__PURE__*/React.createElement("span", null, "\uCD9C\uCC98:"), (dat.sources || []).filter(Boolean).map((s, i) => /*#__PURE__*/React.createElement("a", {
     key: i,
@@ -2089,7 +3585,7 @@ function App() {
   }, s.replace(/https?:\/\//, "").split("/")[0], /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 11,
+      fontSize: 10,
       marginLeft: 2
     }
   }))), /*#__PURE__*/React.createElement("a", {
@@ -2100,9 +3596,9 @@ function App() {
       marginLeft: 4,
       background: "var(--blue)",
       color: "#fff",
-      padding: "3px 10px",
+      padding: "4px 12px",
       borderRadius: 5,
-      fontSize: 12,
+      fontSize: 11,
       textDecoration: "none",
       display: "inline-flex",
       alignItems: "center",
@@ -2112,12 +3608,11 @@ function App() {
   }, "\uACF5\uC2DD \uC0AC\uC774\uD2B8\uC5D0\uC11C \uD655\uC778 ", /*#__PURE__*/React.createElement("i", {
     className: "ti ti-external-link",
     style: {
-      fontSize: 11
+      fontSize: 10
     }
-  }))))))));
+  })))))))));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
-
 
 </script>
 </body>
